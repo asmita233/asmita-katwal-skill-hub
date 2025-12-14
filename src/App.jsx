@@ -14,8 +14,6 @@ import Navbar from './components/students/Navbar'
 const App = () => {
   return (
     <div className='text-default min-h-screen bg-white'>
-
-     
       <Navbar />
       <Routes>
      <Route path='/' element={<Home/>}/>
@@ -27,7 +25,7 @@ const App = () => {
       {/* <Route path='/loading/:path' element={<CoursesList/>}/> */}
       <Route path='/course-list' element={<CoursesList/>}/>
        
-{/* neated route lako xa */}
+{/* nested route lako xa */}
             
        <Route path='/educator' element={< Educator/>}>
             <Route path='educator' element={< Dashboard/>}/>
