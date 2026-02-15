@@ -58,7 +58,6 @@ const userSchema = new mongoose.Schema({
     },
 }, {
     timestamps: true,
-    _id: false, // We're using Clerk ID as _id
 });
 
 const User = mongoose.model('User', userSchema);

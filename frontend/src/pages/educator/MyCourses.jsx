@@ -58,151 +58,120 @@ const MyCourses = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-200 border-t-purple-600"></div>
+          <p className="text-gray-500 font-medium">Fetching your courses...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">My Courses</h1>
+    <div className="space-y-8 animate-fadeIn">
+      <div className="flex items-center justify-between bg-white p-8 rounded-[40px] border border-gray-50 shadow-[0_8px_30px_rgb(0,0,0,0.02)]">
+        <div>
+          <h1 className="text-3xl font-black text-gray-900 tracking-tight">Master Catalog</h1>
+          <p className="text-gray-500 mt-1 font-medium">You have {courses.length} published courses.</p>
+        </div>
         <button
           onClick={() => navigate('/educator/add-course')}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2"
+          className="bg-gray-900 hover:bg-black text-white px-8 py-4 rounded-[20px] font-bold text-sm transition-all hover:scale-105 active:scale-95 shadow-xl shadow-gray-200 flex items-center gap-3"
         >
-          <img src={assets.add_icon} alt="add" className="w-4 h-4 invert" />
-          Add Course
+          <div className="w-6 h-6 bg-white/10 rounded-lg flex items-center justify-center">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4"></path></svg>
+          </div>
+          Create New Course
         </button>
       </div>
 
       {/* Courses Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-[40px] shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-gray-50 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full text-left">
             <thead>
-              <tr className="border-b border-gray-100 bg-gray-50">
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  All Courses
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Earnings
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Students
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Online Status
-                </th>
+              <tr className="bg-gray-50/50">
+                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Course Details</th>
+                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Total Revenue</th>
+                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Students</th>
+                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
-              {courses.map((course) => {
-                const earnings = (
-                  (course.coursePrice -
-                    (course.discount * course.coursePrice) / 100) *
-                  (course.enrolledStudents?.length || 0)
-                ).toFixed(2);
-
-                return (
-                  <tr
-                    key={course._id}
-                    className="hover:bg-gray-50 transition"
-                  >
-                    {/* Course Info */}
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-4">
+            <tbody className="divide-y divide-gray-50">
+              {courses.map((course) => (
+                <tr key={course._id} className="hover:bg-gray-50/50 transition-colors group">
+                  <td className="px-8 py-6">
+                    <div className="flex items-center gap-5">
+                      <div className="w-24 h-16 rounded-2xl overflow-hidden shadow-sm relative group-hover:scale-105 transition-transform">
                         <img
-                          src={course.courseThumbnail}
-                          alt={course.courseTitle}
-                          className="w-20 h-14 object-cover rounded"
+                          src={course.courseThumbnail || '/placeholder.png'}
+                          className="w-full h-full object-cover"
+                          alt=""
                         />
-                        <div>
-                          <h3 className="font-medium text-gray-800 text-sm">
-                            {course.courseTitle}
-                          </h3>
-                          <div className="flex items-center gap-1 mt-1">
-                            <img
-                              src={assets.star}
-                              alt="star"
-                              className="w-3.5 h-3.5"
-                            />
-                            <span className="text-xs text-gray-500">
-                              {calculateRating(course)} ({course.courseRatings?.length || 0} reviews)
-                            </span>
-                          </div>
+                      </div>
+                      <div>
+                        <p className="font-bold text-gray-900 group-hover:text-purple-600 transition-colors">{course.courseTitle}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">ID: {course._id.substring(0, 6)}</span>
+                          <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full uppercase tracking-tighter">{course.category || 'General'}</span>
                         </div>
                       </div>
-                    </td>
-
-                    {/* Earnings */}
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {currency}{earnings}
-                    </td>
-
-                    {/* Students */}
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {course.enrolledStudents?.length || 0}
-                    </td>
-
-                    {/* Online Status Toggle */}
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={course.isPublished}
-                            onChange={() =>
-                              togglePublishStatus(course._id, course.isPublished)
-                            }
-                            className="sr-only peer"
-                          />
-                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        </label>
-                        <span className="text-xs text-gray-500">
-                          {course.isPublished ? 'Live' : 'Draft'}
-                        </span>
+                    </div>
+                  </td>
+                  <td className="px-8 py-6">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-black text-gray-900">{currency}{course.enrolledStudents.length * course.coursePrice}</span>
+                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">{currency}{course.coursePrice} per unit</span>
+                    </div>
+                  </td>
+                  <td className="px-8 py-6">
+                    <div className="flex items-center gap-3">
+                      <div className="flex -space-x-2">
+                        {[1].map(i => (
+                          <div key={i} className="w-6 h-6 rounded-full bg-purple-100 border-2 border-white flex items-center justify-center text-[8px] font-black text-purple-600">U</div>
+                        ))}
                       </div>
-                    </td>
-                  </tr>
-                );
-              })}
+                      <span className="text-sm font-bold text-gray-700">{course.enrolledStudents.length} Students</span>
+                    </div>
+                  </td>
+                  <td className="px-8 py-6">
+                    <div className="flex items-center gap-4">
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={course.isPublished}
+                          onChange={() => togglePublishStatus(course._id, course.isPublished)}
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                      </label>
+                      <span className={`text-[10px] font-black uppercase tracking-widest ${course.isPublished ? 'text-emerald-600' : 'text-amber-600'}`}>
+                        {course.isPublished ? 'Live' : 'Draft'}
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
 
         {courses.length === 0 && (
-          <div className="p-12 text-center">
-            <img
-              src={assets.upload_area}
-              alt="No courses"
-              className="w-16 h-16 mx-auto opacity-50 mb-4"
-            />
-            <h3 className="text-lg font-medium text-gray-800 mb-2">
-              No courses yet
-            </h3>
-            <p className="text-gray-500 mb-4">
-              Create your first course and start teaching
-            </p>
+          <div className="p-20 text-center flex flex-col items-center">
+            <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-6">
+              <svg className="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <h3 className="text-lg font-bold text-gray-900">Your catalog is empty</h3>
+            <p className="text-gray-400 mt-2 max-w-xs mx-auto">Start your teaching journey by creating your first course. It only takes a few minutes.</p>
             <button
               onClick={() => navigate('/educator/add-course')}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition"
+              className="mt-8 px-8 py-4 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-[20px] font-bold text-sm transition-all"
             >
-              Create Course
+              Get Started
             </button>
           </div>
         )}
       </div>
-
-      {/* Pagination - for future implementation */}
-      {courses.length > 0 && (
-        <div className="flex items-center justify-center mt-6">
-          <button className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700">
-            Load More
-          </button>
-        </div>
-      )}
     </div>
   );
 };

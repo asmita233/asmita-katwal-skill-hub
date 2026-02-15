@@ -1,9 +1,17 @@
 import React, { useState } from 'react';
 import { assets } from '../../assets/assets';
 
+/**
+ * Footer Component: Consistent bottom-of-page navigation and branding.
+ * Includes: Descriptions, Navigation Links, Newsletter form, and Social Media icons.
+ */
 const Footer = () => {
   const [email, setEmail] = useState('');
 
+  /**
+   * Simple client-side newsletter subscription handler.
+   * Note: This currently uses a browser alert but could be connected to an API like Mailchimp.
+   */
   const handleSubscribe = (e) => {
     e.preventDefault();
     if (email) {
@@ -15,8 +23,10 @@ const Footer = () => {
   return (
     <footer className="bg-gray-900 w-full mt-10">
       <div className="md:px-36 px-8">
+        {/* --- Top Footer Content: Descriptive sections and forms --- */}
         <div className="flex flex-col md:flex-row items-start justify-between gap-10 md:gap-20 py-10 border-b border-white/20">
-          {/* Logo & Description */}
+
+          {/* Section 1: Branding & Philosophy */}
           <div className="flex flex-col md:items-start items-center w-full md:w-1/3">
             <img src={assets.logo_dark} alt="logo" className="w-28" />
             <p className="mt-6 text-center md:text-left text-sm text-white/70 leading-relaxed">
@@ -25,7 +35,7 @@ const Footer = () => {
             </p>
           </div>
 
-          {/* Company Links */}
+          {/* Section 2: Quick Navigation Links */}
           <div className="flex flex-col md:items-start items-center w-full md:w-1/4">
             <h2 className="font-semibold text-white mb-5">Company</h2>
             <ul className="flex flex-col items-center md:items-start text-sm text-white/70 space-y-3">
@@ -44,7 +54,7 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Newsletter */}
+          {/* Section 3: User Engagement (Newsletter) */}
           <div className="flex flex-col md:items-start items-center w-full md:w-1/3">
             <h2 className="font-semibold text-white mb-5">Subscribe to our newsletter</h2>
             <p className="text-sm text-white/70 mb-4 text-center md:text-left">
@@ -68,9 +78,11 @@ const Footer = () => {
           </div>
         </div>
 
-        {/* Copyright */}
+        {/* --- Bottom Footer Content: Copyright and Socials --- */}
         <div className="py-6 flex flex-col md:flex-row items-center justify-between text-sm text-white/50">
           <p>Copyright {new Date().getFullYear()} © Edemy. All Right Reserved.</p>
+
+          {/* Social Media Link Icons */}
           <div className="flex items-center gap-4 mt-4 md:mt-0">
             <a href="#" className="hover:opacity-80 transition">
               <img src={assets.facebook_icon} alt="facebook" className="w-5 h-5" />
@@ -89,3 +101,4 @@ const Footer = () => {
 };
 
 export default Footer;
+

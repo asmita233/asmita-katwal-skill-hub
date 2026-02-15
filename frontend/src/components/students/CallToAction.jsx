@@ -2,10 +2,15 @@ import React from 'react';
 import { assets } from '../../assets/assets';
 import { Link } from 'react-router-dom';
 
+/**
+ * CallToAction Component: A high-conversion footer banner used to capture user interest 
+ * near the end of the page scrolling experience.
+ */
 const CallToAction = () => {
   return (
     <div className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 py-16 px-8">
       <div className="max-w-4xl mx-auto text-center">
+        {/* --- Catchy Slogan --- */}
         <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">
           Learn anything, anytime, anywhere
         </h1>
@@ -15,6 +20,7 @@ const CallToAction = () => {
           id veniam aliqua proident excepteur commodo do ea.
         </p>
 
+        {/* --- Action Buttons --- */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link
             to="/course-list"
@@ -36,3 +42,4 @@ const CallToAction = () => {
 };
 
 export default CallToAction;
+

@@ -3,10 +3,52 @@ import { AppContext } from '../../context/AppContext';
 import { assets } from '../../assets/assets';
 import Footer from '../../components/students/Footer';
 import { Line } from 'rc-progress';
+import axios from 'axios';
+import { toast } from 'react-toastify';
 
 const MyEnrollment = () => {
-  const { navigate, calculateRating, currency, user, enrolledCourses, calculateCourseDuration, calculateNoOfLectures } = useContext(AppContext);
+  // Destructure global state and utility functions from AppContext
+  const {
+    backendUrl,
+    getToken,
+    navigate,
+    calculateRating,
+    user,
+    enrolledCourses,
+    calculateCourseDuration,
+    calculateNoOfLectures
+  } = useContext(AppContext);
 
+  // Track loading status for specific course certificate generations independently
+  const [loadingMap, setLoadingMap] = useState({});
+
+  /**
+   * Trigger backend API to generate a course completion certificate
+   * @param {Event} e - React Synthetic Event
+   * @param {string} courseId - ID of the completed course
+   */
+  const handleGenerateCertificate = async (e, courseId) => {
+    e.stopPropagation(); // Stop the event from bubbling up to the row click (player navigation)
+    setLoadingMap(prev => ({ ...prev, [courseId]: true }));
+    try {
+      const token = await getToken();
+      const { data } = await axios.post(backendUrl + '/api/certificates/generate', { courseId }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (data.success) {
+        toast.success(data.message || 'Certificate generated! Redirecting...');
+        // Move to the certificates listing page after a brief delay
+        setTimeout(() => navigate('/certificates'), 1500);
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Error generating certificate');
+    } finally {
+      setLoadingMap(prev => ({ ...prev, [courseId]: false }));
+    }
+  };
+
+  // Redirect or show message if user isn't authenticated
   if (!user) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center">
@@ -26,7 +68,7 @@ const MyEnrollment = () => {
   return (
     <>
       <div className="md:px-36 px-8 pt-20 min-h-screen">
-        {/* Page Header */}
+        {/* Visual header for the student's dashboard */}
         <div className="py-8">
           <h1 className="text-3xl font-semibold text-gray-800">
             My Enrollments
@@ -36,7 +78,7 @@ const MyEnrollment = () => {
           </p>
         </div>
 
-        {/* Enrolled Courses Table */}
+        {/* Table Layout for displaying enrolled course details */}
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
@@ -52,10 +94,12 @@ const MyEnrollment = () => {
               </tr>
             </thead>
             <tbody>
-              {enrolledCourses.map((enrollment, index) => {
+              {enrolledCourses?.map((enrollment, index) => {
                 const course = enrollment.courseId;
+                // Safety check for cases where course data might be missing
                 if (!course) return null;
 
+                // Extract metrics for progress bar calculation
                 const totalLectures = calculateNoOfLectures(course);
                 const completedLectures = enrollment.progress?.completedLectures?.length || 0;
                 const progress = totalLectures > 0 ? (completedLectures / totalLectures) * 100 : 0;
@@ -66,7 +110,7 @@ const MyEnrollment = () => {
                     className="border-b border-gray-100 hover:bg-gray-50 transition cursor-pointer"
                     onClick={() => navigate(`/player/${course._id}`)}
                   >
-                    {/* Course Info */}
+                    {/* Thumbnail and Basic Title */}
                     <td className="py-4 px-4">
                       <div className="flex items-center gap-4">
                         <img
@@ -92,12 +136,12 @@ const MyEnrollment = () => {
                       </div>
                     </td>
 
-                    {/* Duration */}
+                    {/* Total calculated time for the course */}
                     <td className="py-4 px-4 hidden md:table-cell text-gray-600">
                       {calculateCourseDuration(course)}
                     </td>
 
-                    {/* Progress */}
+                    {/* Graphical representation of student progress */}
                     <td className="py-4 px-4 hidden md:table-cell">
                       <div className="flex items-center gap-3">
                         <div className="w-32">
@@ -115,16 +159,25 @@ const MyEnrollment = () => {
                       </div>
                     </td>
 
-                    {/* Status */}
+                    {/* Conditional Action: "On Going" badge or "Get Certificate" button */}
                     <td className="py-4 px-4">
-                      <button
-                        className={`px-4 py-1.5 rounded text-sm font-medium ${progress === 100
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-blue-100 text-blue-700'
-                          }`}
-                      >
-                        {progress === 100 ? 'Completed' : 'On Going'}
-                      </button>
+                      {progress === 100 ? (
+                        <button
+                          onClick={(e) => handleGenerateCertificate(e, course._id)}
+                          disabled={loadingMap[course._id]}
+                          className="px-4 py-1.5 rounded text-sm font-medium bg-green-600 text-white hover:bg-green-700 transition flex items-center gap-2"
+                        >
+                          {loadingMap[course._id] ? (
+                            <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent"></div>
+                          ) : 'Get Certificate'}
+                        </button>
+                      ) : (
+                        <button
+                          className="px-4 py-1.5 rounded text-sm font-medium bg-blue-100 text-blue-700 pointer-events-none"
+                        >
+                          On Going
+                        </button>
+                      )}
                     </td>
                   </tr>
                 );
@@ -133,8 +186,8 @@ const MyEnrollment = () => {
           </table>
         </div>
 
-        {/* Empty State */}
-        {enrolledCourses.length === 0 && (
+        {/* UI placeholder for when the user hasn't enrolled in anything yet */}
+        {enrolledCourses?.length === 0 && (
           <div className="text-center py-20">
             <img
               src={assets.upload_area}

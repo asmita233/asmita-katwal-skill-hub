@@ -8,6 +8,7 @@ import {
     removeFromWishlist,
     getWishlist,
     clerkWebhook,
+    becomeEducator,
 } from '../controllers/userController.js';
 
 const router = express.Router();
@@ -19,6 +20,7 @@ router.post('/webhook', clerkWebhook);
 router.get('/me', requireAuth(), getUserData);
 router.get('/enrolled-courses', requireAuth(), getEnrolledCourses);
 router.post('/update-progress', requireAuth(), updateProgress);
+router.post('/become-educator', requireAuth(), becomeEducator);
 
 // Wishlist routes
 router.get('/wishlist', requireAuth(), getWishlist);

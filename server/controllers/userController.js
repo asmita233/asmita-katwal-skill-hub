@@ -1,18 +1,21 @@
 import User from '../models/User.js';
 import { clerkClient } from '@clerk/express';
+// import Course from '../models/Course.js'; // make sure this exists
 
 // Get user data
 export const getUserData = async (req, res) => {
     try {
-        const userId = req.auth.userId;
-        const user = await User.findById(userId);
+        const userId = req.auth?.userId;
 
-        if (!user) {
-            return res.status(404).json({
+        if (!userId) {
+            console.log('User data request rejected: No userId in auth');
+            return res.status(401).json({
                 success: false,
-                message: 'User not found',
+                message: 'Unauthorized: No session found',
             });
         }
+
+        const user = await User.findById(userId);
 
         res.status(200).json({
             success: true,
@@ -30,15 +33,16 @@ export const getUserData = async (req, res) => {
 // Get enrolled courses
 export const getEnrolledCourses = async (req, res) => {
     try {
-        const userId = req.auth.userId;
-        const user = await User.findById(userId).populate('enrolledCourses.courseId');
+        const userId = req.auth?.userId;
 
-        if (!user) {
-            return res.status(404).json({
+        if (!userId) {
+            return res.status(401).json({
                 success: false,
-                message: 'User not found',
+                message: 'Unauthorized: Please log in again',
             });
         }
+
+        const user = await User.findById(userId).populate('enrolledCourses.courseId');
 
         res.status(200).json({
             success: true,
@@ -56,7 +60,7 @@ export const getEnrolledCourses = async (req, res) => {
 // Update user progress for a course
 export const updateProgress = async (req, res) => {
     try {
-        const userId = req.auth.userId;
+        const userId = req.auth?.userId;
         const { courseId, lectureId } = req.body;
 
         const user = await User.findById(userId);
@@ -67,7 +71,6 @@ export const updateProgress = async (req, res) => {
             });
         }
 
-        // Find the enrolled course
         const enrolledCourse = user.enrolledCourses.find(
             (ec) => ec.courseId.toString() === courseId
         );
@@ -79,12 +82,11 @@ export const updateProgress = async (req, res) => {
             });
         }
 
-        // Add lecture to completed if not already completed
         if (!enrolledCourse.progress.completedLectures.includes(lectureId)) {
             enrolledCourse.progress.completedLectures.push(lectureId);
         }
-        enrolledCourse.progress.lastAccessedAt = new Date();
 
+        enrolledCourse.progress.lastAccessedAt = new Date();
         await user.save();
 
         res.status(200).json({
@@ -104,7 +106,7 @@ export const updateProgress = async (req, res) => {
 // Add to wishlist
 export const addToWishlist = async (req, res) => {
     try {
-        const userId = req.auth.userId;
+        const userId = req.auth?.userId;
         const { courseId } = req.body;
 
         const user = await User.findById(userId);
@@ -137,7 +139,7 @@ export const addToWishlist = async (req, res) => {
 // Remove from wishlist
 export const removeFromWishlist = async (req, res) => {
     try {
-        const userId = req.auth.userId;
+        const userId = req.auth?.userId;
         const { courseId } = req.params;
 
         const user = await User.findById(userId);
@@ -148,7 +150,10 @@ export const removeFromWishlist = async (req, res) => {
             });
         }
 
-        user.wishlist = user.wishlist.filter((id) => id.toString() !== courseId);
+        user.wishlist = user.wishlist.filter(
+            (id) => id.toString() !== courseId
+        );
+
         await user.save();
 
         res.status(200).json({
@@ -168,7 +173,7 @@ export const removeFromWishlist = async (req, res) => {
 // Get wishlist
 export const getWishlist = async (req, res) => {
     try {
-        const userId = req.auth.userId;
+        const userId = req.auth?.userId;
         const user = await User.findById(userId).populate('wishlist');
 
         if (!user) {
@@ -198,11 +203,13 @@ export const clerkWebhook = async (req, res) => {
 
         switch (type) {
             case 'user.created':
-            case 'user.updated':
+            case 'user.updated': {
                 const userData = {
                     _id: data.id,
                     email: data.email_addresses[0]?.email_address,
-                    name: `${data.first_name || ''} ${data.last_name || ''}`.trim() || data.email_addresses[0]?.email_address,
+                    name:
+                        `${data.first_name || ''} ${data.last_name || ''}`.trim() ||
+                        data.email_addresses[0]?.email_address,
                     imageUrl: data.image_url || '',
                 };
 
@@ -212,6 +219,7 @@ export const clerkWebhook = async (req, res) => {
                     { upsert: true, new: true }
                 );
                 break;
+            }
 
             case 'user.deleted':
                 await User.findByIdAndDelete(data.id);
@@ -222,5 +230,63 @@ export const clerkWebhook = async (req, res) => {
     } catch (error) {
         console.error('Webhook error:', error);
         res.status(400).json({ error: error.message });
+    }
+};
+
+// Become an educator
+export const becomeEducator = async (req, res) => {
+    try {
+        const userId = req.auth?.userId;
+
+        const user = await User.findByIdAndUpdate(
+            userId,
+            { role: 'educator' },
+            { new: true }
+        );
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found',
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'You are now an educator!',
+            user,
+        });
+    } catch (error) {
+        console.error('Error becoming educator:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+// Purchase course
+export const purchaseCourse = async (req, res) => {
+    try {
+        const userId = req.auth?.userId;
+        const { courseId } = req.body;
+        const { origin } = req.headers;
+
+        const userData = await User.findById(userId);
+        // const courseData = await Course.findById(courseId);
+
+        if (!userData /* || !courseData */) {
+            return res.json({
+                success: false,
+                message: 'User or Course not found',
+            });
+        }
+
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
     }
 };

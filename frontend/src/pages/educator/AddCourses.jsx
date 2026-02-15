@@ -1,37 +1,43 @@
 import React, { useContext, useState, useRef, useEffect } from 'react';
 import { AppContext } from '../../context/AppContext';
 import { assets } from '../../assets/assets';
+import { useClerk, useAuth } from '@clerk/clerk-react';
+import axios from 'axios';
+import { toast } from 'react-toastify';
 import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
 import uniqid from 'uniqid';
-import axios from 'axios';
-import { toast } from 'react-toastify';
 
 const AddCourses = () => {
   const { currency, navigate, backendUrl, getToken } = useContext(AppContext);
   const quillRef = useRef(null);
   const editorRef = useRef(null);
 
-  // Course basic info
+  // --- Course Basic Information State ---
   const [courseTitle, setCourseTitle] = useState('');
   const [coursePrice, setCoursePrice] = useState(0);
   const [discount, setDiscount] = useState(0);
+  const [category, setCategory] = useState('Programming');
+  const [level, setLevel] = useState('Beginner');
   const [thumbnail, setThumbnail] = useState(null);
   const [thumbnailPreview, setThumbnailPreview] = useState(null);
 
-  // Course content - Chapters and Lectures
+  // --- Course Structured Content State (Chapters & Lectures) ---
   const [chapters, setChapters] = useState([]);
   const [showChapterInput, setShowChapterInput] = useState(false);
   const [newChapterTitle, setNewChapterTitle] = useState('');
 
-  // Lecture modal state
+  // --- UI/Modal States for adding lectures ---
   const [showLectureModal, setShowLectureModal] = useState(false);
   const [currentChapterId, setCurrentChapterId] = useState(null);
   const [lectureTitle, setLectureTitle] = useState('');
   const [lectureDuration, setLectureDuration] = useState('');
   const [lectureUrl, setLectureUrl] = useState('');
+  const [lectureVideo, setLectureVideo] = useState(null);
   const [isPreviewFree, setIsPreviewFree] = useState(false);
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
 
+  // Global loading state for API requests
   const [loading, setLoading] = useState(false);
 
   // Initialize Quill editor
@@ -53,7 +59,9 @@ const AddCourses = () => {
     }
   }, []);
 
-  // Handle thumbnail upload
+  // --- Helper Methods for UI Interaction ---
+
+  // Handle local image file selection and create a preview URL
   const handleThumbnailChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -62,12 +70,12 @@ const AddCourses = () => {
     }
   };
 
-  // Add new chapter
+  // Logic to add a new chapter to the course content array
   const addChapter = () => {
     if (!newChapterTitle.trim()) return;
 
     const newChapter = {
-      chapterId: uniqid('chapter_'),
+      chapterId: uniqid('chapter_'), // Generate unique client-side ID
       chapterOrder: chapters.length + 1,
       chapterTitle: newChapterTitle,
       chapterContent: [],
@@ -90,12 +98,61 @@ const AddCourses = () => {
     setLectureTitle('');
     setLectureDuration('');
     setLectureUrl('');
+    setLectureVideo(null);
     setIsPreviewFree(false);
+    setIsUploadingVideo(false);
   };
 
   // Add lecture to chapter
-  const addLecture = () => {
-    if (!lectureTitle.trim() || !lectureUrl.trim()) return;
+  const addLecture = async () => {
+    // Basic validation
+    if (!lectureTitle.trim()) {
+      toast.error('Please enter a lecture title');
+      return;
+    }
+
+    if (!lectureUrl.trim() && !lectureVideo) {
+      toast.error('Please provide a video URL or upload a video file');
+      return;
+    }
+
+    let finalVideoUrl = lectureUrl;
+
+    // If a video file is selected, upload it first
+    if (lectureVideo) {
+      setIsUploadingVideo(true);
+      try {
+        const token = await getToken();
+        const formData = new FormData();
+        formData.append('video', lectureVideo);
+
+        const { data } = await axios.post(`${backendUrl}/api/courses/upload-video`, formData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          },
+          // Track upload progress if possible (optional but nice)
+          onUploadProgress: (progressEvent) => {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            console.log(`Upload progress: ${percentCompleted}%`);
+          }
+        });
+
+        if (data.success) {
+          finalVideoUrl = data.videoUrl;
+          toast.success('Video uploaded successfully');
+        } else {
+          toast.error(data.message || 'Video upload failed');
+          setIsUploadingVideo(false);
+          return;
+        }
+      } catch (error) {
+        console.error('Error uploading video:', error);
+        toast.error(error.response?.data?.message || 'Error uploading video');
+        setIsUploadingVideo(false);
+        return;
+      }
+    }
 
     const updatedChapters = chapters.map((chapter) => {
       if (chapter.chapterId === currentChapterId) {
@@ -104,7 +161,7 @@ const AddCourses = () => {
           lectureOrder: chapter.chapterContent.length + 1,
           lectureTitle,
           lectureDuration: parseInt(lectureDuration) || 0,
-          lectureUrl,
+          lectureUrl: finalVideoUrl,
           isPreviewFree,
         };
         return {
@@ -116,6 +173,7 @@ const AddCourses = () => {
     });
 
     setChapters(updatedChapters);
+    setIsUploadingVideo(false);
     setShowLectureModal(false);
   };
 
@@ -135,7 +193,11 @@ const AddCourses = () => {
     setChapters(updatedChapters);
   };
 
-  // Handle form submission
+  // --- Final Form Submission ---
+  // This process is multi-step: 
+  // 1. Create the course record
+  // 2. Upload thumbnail to a separate endpoint (if provided)
+  // 3. Officially publish the course
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -143,15 +205,24 @@ const AddCourses = () => {
     try {
       const token = await getToken();
 
+      if (!token) {
+        toast.error('You must be logged in to create a course');
+        setLoading(false);
+        return;
+      }
+
+      // Prepare payload with descriptive HTML from Quill
       const courseData = {
         courseTitle,
         courseDescription: quillRef.current?.root.innerHTML || '',
         coursePrice: parseFloat(coursePrice),
         discount: parseFloat(discount),
+        category,
+        level,
         courseContent: chapters,
       };
 
-      // First create the course
+      // Step 1: Initial Course Creation
       const { data } = await axios.post(backendUrl + '/api/courses', courseData, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -159,7 +230,7 @@ const AddCourses = () => {
       if (data.success) {
         const courseId = data.course._id;
 
-        // Then upload thumbnail if exists
+        // Step 2: Handle Thumbnail Upload using FormData
         if (thumbnail) {
           const formData = new FormData();
           formData.append('thumbnail', thumbnail);
@@ -172,7 +243,7 @@ const AddCourses = () => {
           });
         }
 
-        // Finally publish the course
+        // Step 3: Patch request to mark the course as 'published'
         await axios.patch(`${backendUrl}/api/courses/${courseId}/publish`, {}, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -180,11 +251,12 @@ const AddCourses = () => {
         toast.success('Course created and published successfully!');
         navigate('/educator/my-courses');
       } else {
-        toast.error(data.message);
+        toast.error(data.message || 'Failed to create course');
       }
     } catch (error) {
       console.error('Error creating course:', error);
-      toast.error(error.response?.data?.message || 'Error creating course. Please try again.');
+      const errorMessage = error.response?.data?.message || error.response?.data?.details?.join(', ') || error.message || 'Error creating course.';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -221,8 +293,8 @@ const AddCourses = () => {
           />
         </div>
 
-        {/* Price and Discount */}
-        <div className="grid grid-cols-2 gap-4">
+        {/* Price, Discount, Category, Level */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Course Price ({currency})
@@ -250,6 +322,38 @@ const AddCourses = () => {
               max="100"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Category
+            </label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+            >
+              <option value="Programming">Programming</option>
+              <option value="Design">Design</option>
+              <option value="Marketing">Marketing</option>
+              <option value="Business">Business</option>
+              <option value="Cybersecurity">Cybersecurity</option>
+              <option value="Personal Development">Personal Development</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Level
+            </label>
+            <select
+              value={level}
+              onChange={(e) => setLevel(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+            >
+              <option value="Beginner">Beginner</option>
+              <option value="Intermediate">Intermediate</option>
+              <option value="Advanced">Advanced</option>
+              <option value="All Levels">All Levels</option>
+            </select>
           </div>
         </div>
 
@@ -479,15 +583,66 @@ const AddCourses = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Video URL (YouTube)
+                  Video Option
                 </label>
-                <input
-                  type="url"
-                  value={lectureUrl}
-                  onChange={(e) => setLectureUrl(e.target.value)}
-                  placeholder="https://youtu.be/..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                />
+                <div className="space-y-3">
+                  {/* URL Option */}
+                  <div>
+                    <span className="text-xs text-gray-500 block mb-1">Option 1: Video URL (YouTube)</span>
+                    <input
+                      type="url"
+                      value={lectureUrl}
+                      onChange={(e) => {
+                        setLectureUrl(e.target.value);
+                        if (e.target.value) setLectureVideo(null);
+                      }}
+                      placeholder="https://youtu.be/..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                      disabled={isUploadingVideo || !!lectureVideo}
+                    />
+                  </div>
+
+                  {/* Divider */}
+                  <div className="flex items-center gap-2">
+                    <hr className="flex-1 border-gray-200" />
+                    <span className="text-[10px] text-gray-400 font-bold">OR</span>
+                    <hr className="flex-1 border-gray-200" />
+                  </div>
+
+                  {/* File Upload Option */}
+                  <div>
+                    <span className="text-xs text-gray-500 block mb-1">Option 2: Upload Video File</span>
+                    <div className="flex items-center gap-2">
+                      <label className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 border-2 border-dashed rounded-lg cursor-pointer transition ${lectureVideo ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-blue-500'} ${isUploadingVideo ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                        <input
+                          type="file"
+                          accept="video/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            if (e.target.files[0]) {
+                              setLectureVideo(e.target.files[0]);
+                              setLectureUrl('');
+                            }
+                          }}
+                          disabled={isUploadingVideo}
+                        />
+                        <img src={assets.file_upload_icon} alt="" className="w-4 h-4 opacity-70" />
+                        <span className="text-sm text-gray-600 truncate">
+                          {lectureVideo ? lectureVideo.name : 'Select Video File'}
+                        </span>
+                      </label>
+                      {lectureVideo && !isUploadingVideo && (
+                        <button
+                          type="button"
+                          onClick={() => setLectureVideo(null)}
+                          className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
+                        >
+                          <img src={assets.cross_icon} alt="" className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div className="flex items-center gap-2">
@@ -512,15 +667,17 @@ const AddCourses = () => {
                 type="button"
                 onClick={() => setShowLectureModal(false)}
                 className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                disabled={isUploadingVideo}
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={addLecture}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                disabled={isUploadingVideo}
+                className={`px-4 py-2 bg-blue-600 text-white rounded-lg transition ${isUploadingVideo ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'}`}
               >
-                Add Lecture
+                {isUploadingVideo ? 'Uploading...' : 'Add Lecture'}
               </button>
             </div>
           </div>

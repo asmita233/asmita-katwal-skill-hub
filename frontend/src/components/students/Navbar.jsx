@@ -1,84 +1,166 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { assets } from '../../assets/assets';
 import { Link, useLocation } from 'react-router-dom';
 import { useClerk, UserButton, useUser } from '@clerk/clerk-react';
 import { AppContext } from '../../context/AppContext';
 
 const Navbar = () => {
+  // Extracting navigation and educator status from global context
   const { navigate, isEducator } = useContext(AppContext);
+  // Get current path for potential active state styling
   const location = useLocation();
-  const isCourseListPage = location.pathname.includes('/course-list');
-  const { openSignIn } = useClerk();
+  // Clerk hooks for controlling authentication modals
+  const { openSignIn, openSignUp } = useClerk();
+  // Clerk hook to get current user information
   const { user } = useUser();
+  // State for toggling the 'My Learning' dropdown on desktop
+  const [showDropdown, setShowDropdown] = useState(false);
 
   return (
-    <nav className="w-full border-b border-gray-200 bg-white fixed top-0 z-50">
-      <div className="max-w-7xl mx-auto flex items-center justify-between px-5 sm:px-8 lg:px-12 py-3">
+    <nav className="w-full border-b border-gray-100 bg-white/80 backdrop-blur-md fixed top-0 z-50 transition-all duration-300">
+      <div className="max-w-7xl mx-auto flex items-center justify-between px-6 sm:px-10 lg:px-12 py-4">
 
-        {/* Logo */}
-        <img
-          onClick={() => navigate('/')}
-          src={assets.logo}
-          alt="Logo"
-          className="w-28 cursor-pointer"
-        />
+        {/* Logo and Primary Left-side Navigation */}
+        <div className="flex items-center gap-8">
+          <img
+            onClick={() => navigate('/')}
+            src={assets.logo}
+            alt="Logo"
+            className="w-32 cursor-pointer transform hover:scale-105 transition-transform"
+          />
 
-        {/* Desktop Menu */}
-        <div className="hidden md:flex items-center gap-6 text-sm text-gray-600">
-          {/* Add Courses link - visible for educators or when user clicks to see options */}
+          {/* Categories dropdown (Placeholder for now) */}
+          <div className="hidden lg:flex items-center text-sm font-medium text-gray-600 hover:text-blue-600 cursor-pointer transition">
+            Categories
+          </div>
+        </div>
+
+        {/* Desktop Menu - Visible on Medium screens and above */}
+        <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-gray-600">
           <Link
             to="/course-list"
             className="hover:text-blue-600 transition"
           >
-            Add Courses
+            All Courses
           </Link>
 
+          {/* Authenticated user links */}
           {user && (
             <>
-              <button
-                onClick={() => navigate('/educator')}
-                className="hover:text-blue-600 transition"
-              >
-                {isEducator ? 'Educator Dashboard' : 'Become Educator'}
-              </button>
+              {/* My Learning Dropdown Section */}
+              <div className="relative group">
+                <button
+                  onClick={() => setShowDropdown(!showDropdown)}
+                  className="flex items-center gap-1 hover:text-blue-600 transition py-2"
+                >
+                  My Learning
+                  <svg className={`w-4 h-4 transition-transform ${showDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                </button>
 
-              <Link
-                to="/my-enrollments"
-                className="hover:text-blue-600 transition"
-              >
-                My Enrollments
-              </Link>
+                {/* Dropdown Menu contents */}
+                <div className={`absolute top-full right-0 mt-1 w-56 bg-white rounded-xl shadow-2xl border border-gray-100 py-3 z-50 transition-all duration-200 ${showDropdown ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'}`}>
+                  {/* Link to Student Dashboard */}
+                  <Link
+                    to="/dashboard"
+                    className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                      </svg>
+                    </div>
+                    Dashboard
+                  </Link>
+                  {/* Link to Enrolled Courses */}
+                  <Link
+                    to="/my-enrollments"
+                    className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center text-green-600">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                      </svg>
+                    </div>
+                    My Enrollments
+                  </Link>
+                  {/* Link to Wishlist */}
+                  <Link
+                    to="/wishlist"
+                    className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-pink-50 flex items-center justify-center text-pink-600">
+                      <svg className="w-4 h-4" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                      </svg>
+                    </div>
+                    Wishlist
+                  </Link>
+                  {/* Link to Certificates */}
+                  <Link
+                    to="/certificates"
+                    className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
+                      </svg>
+                    </div>
+                    Certificates
+                  </Link>
+                </div>
+              </div>
             </>
           )}
 
+          {/* Conditional Auth Buttons: Avatar if logged in, Sign In/Up if not */}
           {user ? (
-            <UserButton />
+            <div className="flex items-center gap-4 ml-4">
+              <UserButton
+                afterSignOutUrl="/"
+                appearance={{
+                  elements: {
+                    userButtonAvatarBox: "w-10 h-10 border-2 border-blue-100 hover:border-blue-500 transition-all"
+                  }
+                }}
+              />
+            </div>
           ) : (
-            <button
-              onClick={() => openSignIn()}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-full text-sm transition"
-            >
-              Create Account
-            </button>
+            <div className="flex items-center gap-4 ml-4">
+              <button
+                onClick={() => openSignIn()}
+                className="text-gray-700 hover:text-blue-600 transition"
+              >
+                Log in
+              </button>
+              <button
+                onClick={() => openSignUp()}
+                className="bg-gray-900 hover:bg-black text-white px-6 py-2.5 rounded-lg text-sm font-bold shadow-lg shadow-gray-200 transition-all active:scale-95"
+              >
+                Create Account
+              </button>
+            </div>
           )}
         </div>
 
-        {/* Mobile Menu */}
+        {/* Mobile Menu - Only visible on small screens */}
         <div className="md:hidden flex items-center gap-4">
           {user ? (
-            <UserButton />
+            <UserButton afterSignOutUrl="/" />
           ) : (
             <button
-              onClick={() => openSignIn()}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full text-sm transition"
+              onClick={() => openSignUp()}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition"
             >
-              Login
+              Sign Up
             </button>
           )}
         </div>
       </div>
-    </nav>
+    </nav >
   );
 };
 
 export default Navbar;
+

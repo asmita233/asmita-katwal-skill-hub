@@ -1,0 +1,260 @@
+import Certificate from '../models/Certificate.js';
+import Course from '../models/Course.js';
+import User from '../models/User.js';
+import { v4 as uuidv4 } from 'uuid';
+
+// Generate certificate for a completed course
+export const generateCertificate = async (req, res) => {
+    try {
+        const userId = req.auth?.userId;
+        const { courseId } = req.body;
+
+        // Get user
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found',
+            });
+        }
+
+        // Get course
+        const course = await Course.findById(courseId);
+        if (!course) {
+            return res.status(404).json({
+                success: false,
+                message: 'Course not found',
+            });
+        }
+
+        // Check if enrolled
+        const enrollment = user.enrolledCourses.find(
+            ec => ec.courseId && ec.courseId.toString() === courseId
+        );
+
+        if (!enrollment) {
+            return res.status(403).json({
+                success: false,
+                message: 'You are not enrolled in this course',
+            });
+        }
+
+        // Calculate completion percentage
+        let totalLectures = 0;
+        course.courseContent?.forEach(chapter => {
+            totalLectures += chapter.chapterContent?.length || 0;
+        });
+
+        const completedLectures = enrollment.progress?.completedLectures?.length || 0;
+        const completionPercentage = totalLectures > 0
+            ? Math.round((completedLectures / totalLectures) * 100)
+            : 0;
+
+        // Check if course is completed (at least 80%)
+        if (completionPercentage < 80) {
+            return res.status(400).json({
+                success: false,
+                message: `Course completion is ${completionPercentage}%. You need at least 80% to get a certificate.`,
+                completionPercentage,
+            });
+        }
+
+        // Check if certificate already exists
+        let certificate = await Certificate.findOne({ userId, courseId });
+
+        if (certificate) {
+            return res.status(200).json({
+                success: true,
+                message: 'Certificate already exists',
+                certificate,
+            });
+        }
+
+        // Generate unique certificate ID
+        const certificateId = `CERT-${uuidv4().split('-')[0].toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
+
+        // Create certificate
+        certificate = new Certificate({
+            userId,
+            courseId,
+            userName: user.name,
+            courseTitle: course.courseTitle,
+            certificateId,
+            completionDate: new Date(),
+        });
+
+        await certificate.save();
+
+        res.status(201).json({
+            success: true,
+            message: 'Certificate generated successfully',
+            certificate,
+        });
+    } catch (error) {
+        console.error('Error generating certificate:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+// Get user's certificates
+export const getUserCertificates = async (req, res) => {
+    try {
+        const userId = req.auth?.userId;
+
+        const certificates = await Certificate.find({ userId })
+            .populate('courseId', 'courseTitle courseThumbnail')
+            .sort({ completionDate: -1 });
+
+        res.status(200).json({
+            success: true,
+            certificates: certificates || [],
+        });
+    } catch (error) {
+        console.error('Error getting certificates:', error);
+        // Emergency log for debugging
+        import('fs').then(fs => {
+            fs.appendFileSync('error.log', `[${new Date().toISOString()}] Certificate Load Error: ${error.message}\n${error.stack}\n`);
+        });
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+// Get certificate by ID
+export const getCertificateById = async (req, res) => {
+    try {
+        const { certificateId } = req.params;
+
+        const certificate = await Certificate.findOne({ certificateId })
+            .populate('courseId', 'courseTitle courseThumbnail educator')
+            .populate('userId', 'name imageUrl');
+
+        if (!certificate) {
+            return res.status(404).json({
+                success: false,
+                message: 'Certificate not found',
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            certificate,
+        });
+    } catch (error) {
+        console.error('Error getting certificate:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+// Verify certificate (public)
+export const verifyCertificate = async (req, res) => {
+    try {
+        const { certificateId } = req.params;
+
+        const certificate = await Certificate.findOne({ certificateId })
+            .populate('courseId', 'courseTitle')
+            .select('userName courseTitle completionDate certificateId');
+
+        if (!certificate) {
+            return res.status(404).json({
+                success: false,
+                message: 'Certificate not found or invalid',
+                valid: false,
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            valid: true,
+            certificate: {
+                certificateId: certificate.certificateId,
+                userName: certificate.userName,
+                courseTitle: certificate.courseTitle,
+                completionDate: certificate.completionDate,
+            },
+        });
+    } catch (error) {
+        console.error('Error verifying certificate:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+// Check if user can get certificate for a course
+export const checkCertificateEligibility = async (req, res) => {
+    try {
+        const userId = req.auth?.userId;
+        const { courseId } = req.params;
+
+        // Get user
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found',
+            });
+        }
+
+        // Get course
+        const course = await Course.findById(courseId);
+        if (!course) {
+            return res.status(404).json({
+                success: false,
+                message: 'Course not found',
+            });
+        }
+
+        // Check enrollment
+        const enrollment = user.enrolledCourses.find(
+            ec => ec.courseId && ec.courseId.toString() === courseId
+        );
+
+        if (!enrollment) {
+            return res.status(200).json({
+                success: true,
+                eligible: false,
+                reason: 'Not enrolled in this course',
+                completionPercentage: 0,
+            });
+        }
+
+        // Calculate completion
+        let totalLectures = 0;
+        course.courseContent?.forEach(chapter => {
+            totalLectures += chapter.chapterContent?.length || 0;
+        });
+
+        const completedLectures = enrollment.progress?.completedLectures?.length || 0;
+        const completionPercentage = totalLectures > 0
+            ? Math.round((completedLectures / totalLectures) * 100)
+            : 0;
+
+        // Check if certificate exists
+        const existingCertificate = await Certificate.findOne({ userId, courseId });
+
+        res.status(200).json({
+            success: true,
+            eligible: completionPercentage >= 80,
+            alreadyHasCertificate: !!existingCertificate,
+            certificate: existingCertificate,
+            completionPercentage,
+            requiredPercentage: 80,
+        });
+    } catch (error) {
+        console.error('Error checking eligibility:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};

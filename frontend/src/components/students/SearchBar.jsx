@@ -2,16 +2,32 @@ import React, { useState } from 'react'
 import { assets } from '../../assets/assets'
 import { useNavigate } from 'react-router-dom'
 
+/**
+ * SearchBar Component: Handles user input for finding courses.
+ * Logic:
+ * - Uses local state 'input' to track typing.
+ * - On submission, it pushes the query to the URL via '/course-list/:query'.
+ * - This allows users to share direct links to search results.
+ */
 const SearchBar = ({ data }) => {
   const navigate = useNavigate()
+
+  // Local state initialized with optional default data (usually from URL params)
   const [input, setInput] = useState(data || '')
 
+  /**
+   * Search Submission Handler:
+   * 1. Prevents page reload.
+   * 2. If input is empty, redirects to the base courses list.
+   * 3. If input exists, redirects to the dynamic search route.
+   */
   const onSearchHandler = (e) => {
     e.preventDefault()
     if (!input.trim()) {
       navigate('/course-list')
       return
     }
+    // Encodes the search term in the URL for the CoursesSection/CoursesList to consume
     navigate('/course-list/' + input)
   }
 
@@ -25,12 +41,14 @@ const SearchBar = ({ data }) => {
         rounded-md shadow-sm
       "
     >
+      {/* Visual Search Icon */}
       <img
         src={assets.search_icon}
         alt="search"
         className="w-10 px-3"
       />
 
+      {/* Controlled Input Field */}
       <input
         type="text"
         value={input}
@@ -42,6 +60,7 @@ const SearchBar = ({ data }) => {
         "
       />
 
+      {/* Submission Button */}
       <button
         type="submit"
         className="
@@ -58,3 +77,4 @@ const SearchBar = ({ data }) => {
 }
 
 export default SearchBar
+
