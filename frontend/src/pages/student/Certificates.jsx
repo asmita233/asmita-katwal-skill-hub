@@ -52,9 +52,7 @@ const Certificates = () => {
     }, [user]);
 
     /**
-     * Client-side PDF Generation Logic:
-     * 1. Temporarily renders a high-quality "Certificate Template"
-     * 2. Uses html2canvas to take a "screenshot" of that HTML template
+     * 
      * 3. Embeds that image into a jsPDF document and triggers a browser download
      */
     const downloadCertificate = async (cert) => {

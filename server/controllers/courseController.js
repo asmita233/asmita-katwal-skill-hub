@@ -363,6 +363,41 @@ export const uploadVideo = async (req, res) => {
     }
 };
 
+// Upload PDF/study material for a lecture
+export const uploadPdf = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'No PDF file uploaded',
+            });
+        }
+
+        console.log('Uploading PDF to Cloudinary:', req.file.path);
+
+        // Upload to Cloudinary with resource_type: 'raw' for non-media files
+        const result = await cloudinary.uploader.upload(req.file.path, {
+            folder: 'edemy/materials',
+            resource_type: 'raw',
+        });
+
+        // Remove temporary file
+        fs.unlinkSync(req.file.path);
+
+        res.status(200).json({
+            success: true,
+            message: 'PDF uploaded successfully',
+            pdfUrl: result.secure_url,
+        });
+    } catch (error) {
+        console.error('Error uploading PDF:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
 // Toggle publish status  allow tecaher to work on course
 export const togglePublish = async (req, res) => {
     try {

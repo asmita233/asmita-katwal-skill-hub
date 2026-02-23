@@ -11,6 +11,7 @@ import PaymentSuccess from './pages/student/PaymentSuccess'
 import Wishlist from './pages/student/Wishlist'
 import StudentDashboard from './pages/student/StudentDashboard'
 import Certificates from './pages/student/Certificates'
+import Profile from './pages/student/Profile'
 // Importing educator pages
 import Educator from './pages/educator/Educator'
 import Dashboard from './pages/educator/Dashboard'
@@ -18,6 +19,7 @@ import AddCourses from './pages/educator/AddCourses'
 import MyCourses from './pages/educator/MyCourses'
 import StudentEnrollment from './pages/educator/StudentEnrollment'
 import EducatorQA from './pages/educator/EducatorQA'
+import EducatorReviews from './pages/educator/EducatorReviews'
 // Importing global components and toast notifications
 import Navbar from './components/students/Navbar'
 import { ToastContainer } from 'react-toastify'
@@ -65,6 +67,7 @@ const App = () => {
         <Route path='/wishlist' element={user ? <Wishlist /> : <Navigate to="/" />} />
         <Route path='/dashboard' element={user ? <StudentDashboard /> : <Navigate to="/" />} />
         <Route path='/certificates' element={user ? <Certificates /> : <Navigate to="/" />} />
+        <Route path='/profile' element={user ? <Profile /> : <Navigate to="/" />} />
 
         {/* Educator-specific routes wrapped in the Educator layout component */}
         <Route path='/educator' element={<Educator />}>
@@ -73,6 +76,7 @@ const App = () => {
           <Route path='my-courses' element={<MyCourses />} />
           <Route path='student-enrolled' element={<StudentEnrollment />} />
           <Route path='questions' element={<EducatorQA />} />
+          <Route path='reviews' element={<EducatorReviews />} />
         </Route>
       </Routes>
     </div>

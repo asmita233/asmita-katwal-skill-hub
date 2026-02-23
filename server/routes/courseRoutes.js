@@ -9,6 +9,7 @@ import {
     deleteCourse,
     uploadThumbnail,
     uploadVideo,
+    uploadPdf,
     togglePublish,
     addRating,
     getEducatorCourses,
@@ -53,6 +54,19 @@ const uploadVideoMulter = multer({
     },
 });
 
+const uploadPdfMulter = multer({
+    storage,
+    limits: { fileSize: 20 * 1024 * 1024 }, // 20MB limit for PDFs
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation'];
+        if (allowedTypes.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only PDF and document files are allowed'), false);
+        }
+    },
+});
+
 // Public routes
 router.get('/', getAllCourses);
 router.get('/:id', getCourseById);
@@ -63,6 +77,7 @@ router.put('/:id', requireAuth(), updateCourse);
 router.delete('/:id', requireAuth(), deleteCourse);
 router.post('/:id/thumbnail', requireAuth(), upload.single('thumbnail'), uploadThumbnail);
 router.post('/upload-video', requireAuth(), uploadVideoMulter.single('video'), uploadVideo);
+router.post('/upload-pdf', requireAuth(), uploadPdfMulter.single('pdf'), uploadPdf);
 router.patch('/:id/publish', requireAuth(), togglePublish);
 router.post('/:id/rating', requireAuth(), addRating);
 

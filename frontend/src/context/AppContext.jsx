@@ -24,6 +24,19 @@ export const AppContextProvider = (props) => {
     const [enrolledCourses, setEnrolledCourses] = useState([]); // List of courses the current student is enrolled in
     const [userData, setUserData] = useState(null); // Detailed user data from the backend
     const [loading, setLoading] = useState(true); // Global loading state for initial data fetch
+    const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+
+    // Toggle between light and dark mode
+    const toggleTheme = () => {
+        const newTheme = theme === 'light' ? 'dark' : 'light';
+        setTheme(newTheme);
+        localStorage.setItem('theme', newTheme);
+    };
+
+    // Apply theme class to document body
+    useEffect(() => {
+        document.documentElement.classList.toggle('dark', theme === 'dark');
+    }, [theme]);
 
     // Fetch all courses from the backend API
     const fetchAllCourses = async () => {
@@ -187,7 +200,9 @@ export const AppContextProvider = (props) => {
         getToken,
         fetchAllCourses,
         fetchEnrolledCourses,
-        becomeEducator
+        becomeEducator,
+        theme,
+        toggleTheme
     };
 
     return (

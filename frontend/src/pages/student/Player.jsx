@@ -213,6 +213,23 @@ const Player = () => {
               <span>{currentLecture?.lectureDuration} min</span>
               <span>•</span>
               <span>Lecture {currentLecture?.lectureOrder}</span>
+              {/* PDF Download Button */}
+              {currentLecture?.lecturePdf && (
+                <>
+                  <span>•</span>
+                  <a
+                    href={currentLecture.lecturePdf}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Download Study Material
+                  </a>
+                </>
+              )}
             </div>
 
             {/* About Course Section (Truncated Description) */}
@@ -316,9 +333,16 @@ const Player = () => {
                           >
                             {lecture.lectureTitle}
                           </p>
-                          <p className="text-xs text-gray-400">
-                            {lecture.lectureDuration} min
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs text-gray-400">
+                              {lecture.lectureDuration} min
+                            </p>
+                            {lecture.lecturePdf && (
+                              <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-medium">
+                                PDF
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </button>
                     );

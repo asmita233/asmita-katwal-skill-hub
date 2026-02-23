@@ -118,6 +118,7 @@ body {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -132,6 +133,7 @@ body {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -140,4 +142,114 @@ body {
 
 .animate-slideUp {
   animation: slideUp 0.3s ease-out;
+}
+
+/* ================================
+   DARK MODE STYLES
+   ================================ */
+
+/* Base dark mode: inverts the main background and body text */
+.dark {
+  color-scheme: dark;
+}
+
+.dark body,
+.dark {
+  background-color: #0f172a;
+  color: #e2e8f0;
+}
+
+/* White background elements become dark */
+.dark .bg-white {
+  background-color: #1e293b !important;
+}
+
+.dark .bg-gray-50 {
+  background-color: #1e293b !important;
+}
+
+.dark .bg-gray-100 {
+  background-color: #334155 !important;
+}
+
+/* Text color overrides */
+.dark .text-gray-800,
+.dark .text-gray-900 {
+  color: #f1f5f9 !important;
+}
+
+.dark .text-gray-700 {
+  color: #cbd5e1 !important;
+}
+
+.dark .text-gray-600 {
+  color: #94a3b8 !important;
+}
+
+.dark .text-gray-500 {
+  color: #94a3b8 !important;
+}
+
+.dark .text-gray-400 {
+  color: #64748b !important;
+}
+
+/* Border overrides */
+.dark .border-gray-100,
+.dark .border-gray-200,
+.dark .border-gray-300 {
+  border-color: #334155 !important;
+}
+
+/* Card and surface shadows */
+.dark .shadow-sm,
+.dark .shadow-lg,
+.dark .shadow-xl {
+  --tw-shadow-color: rgba(0, 0, 0, 0.3);
+}
+
+/* Input fields */
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+  color: #e2e8f0 !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #64748b !important;
+}
+
+/* Gradient backgrounds - override common ones */
+.dark .bg-gradient-to-b.from-cyan-100\/70 {
+  --tw-gradient-from: rgba(15, 23, 42, 0.7) !important;
+}
+
+/* Scrollbar dark mode */
+.dark ::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Footer, cards, dropdowns */
+.dark .bg-white\/80 {
+  background-color: rgba(30, 41, 59, 0.95) !important;
+}
+
+/* Rich text content in dark mode */
+.dark .rich-text {
+  color: #cbd5e1;
+}
+
+.dark .rich-text a {
+  color: #60a5fa;
 }

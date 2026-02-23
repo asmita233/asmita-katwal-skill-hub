@@ -2,6 +2,7 @@ import Stripe from 'stripe';
 import Course from '../models/Course.js';
 import User from '../models/User.js';
 import Purchase from '../models/Purchase.js';
+import { sendEnrollmentEmail, sendPaymentSuccessEmail } from '../utils/emailService.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -46,6 +47,13 @@ export const createCheckoutSession = async (req, res) => {
             await user.save();
 
             return res.status(200).json({ success: true, message: 'Enrolled in free course', isFree: true });
+        }
+        // Note: enrollment email for free courses is sent here
+        // For paid courses, the email is sent after payment verification
+        if (user.email) {
+            sendEnrollmentEmail(user.email, user.name, course.courseTitle).catch(err =>
+                console.error('Failed to send enrollment email:', err)
+            );
         }
 
         // STRIPE SESSION CREATION:
@@ -141,6 +149,14 @@ export const verifyPayment = async (req, res) => {
                 success: true,
                 message: 'Payment verified and enrolled successfully',
             });
+
+            // Send payment success + enrollment email
+            if (user && user.email) {
+                const amount = session.amount_total / 100;
+                sendPaymentSuccessEmail(user.email, user.name, course?.courseTitle || 'Course', amount).catch(err =>
+                    console.error('Failed to send payment email:', err)
+                );
+            }
         } else {
             res.status(400).json({
                 success: false,

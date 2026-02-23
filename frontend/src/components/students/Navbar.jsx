@@ -6,7 +6,7 @@ import { AppContext } from '../../context/AppContext';
 
 const Navbar = () => {
   // Extracting navigation and educator status from global context
-  const { navigate, isEducator } = useContext(AppContext);
+  const { navigate, isEducator, theme, toggleTheme } = useContext(AppContext);
   // Get current path for potential active state styling
   const location = useLocation();
   // Clerk hooks for controlling authentication modals
@@ -17,7 +17,7 @@ const Navbar = () => {
   const [showDropdown, setShowDropdown] = useState(false);
 
   return (
-    <nav className="w-full border-b border-gray-100 bg-white/80 backdrop-blur-md fixed top-0 z-50 transition-all duration-300">
+    <nav className={`w-full border-b fixed top-0 z-50 transition-all duration-300 ${theme === 'dark' ? 'bg-gray-900/95 border-gray-700 backdrop-blur-md' : 'bg-white/80 border-gray-100 backdrop-blur-md'}`}>
       <div className="max-w-7xl mx-auto flex items-center justify-between px-6 sm:px-10 lg:px-12 py-4">
 
         {/* Logo and Primary Left-side Navigation */}
@@ -109,10 +109,41 @@ const Navbar = () => {
                     </div>
                     Certificates
                   </Link>
+                  {/* Divider */}
+                  <div className="border-t border-gray-100 my-1"></div>
+                  {/* Link to Profile */}
+                  <Link
+                    to="/profile"
+                    className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                      </svg>
+                    </div>
+                    My Profile
+                  </Link>
                 </div>
               </div>
             </>
           )}
+
+          {/* Dark Mode Toggle */}
+          <button
+            onClick={toggleTheme}
+            className={`p-2 rounded-xl transition-all duration-200 ${theme === 'dark' ? 'bg-gray-700 text-yellow-400 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+            aria-label="Toggle dark mode"
+          >
+            {theme === 'dark' ? (
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+              </svg>
+            )}
+          </button>
 
           {/* Conditional Auth Buttons: Avatar if logged in, Sign In/Up if not */}
           {user ? (

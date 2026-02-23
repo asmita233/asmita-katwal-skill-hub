@@ -7,6 +7,7 @@ const lectureSchema = new mongoose.Schema({
     lectureTitle: { type: String, required: true },
     lectureDuration: { type: Number, default: 0 }, // Length of the video in minutes
     lectureUrl: { type: String, required: true }, // The YouTube or Video link
+    lecturePdf: { type: String, default: '' }, // Optional PDF/study material URL (Cloudinary)
     isPreviewFree: { type: Boolean, default: false }, // If true, non-enrolled users can watch this
 });
 
@@ -99,7 +100,7 @@ courseSchema.pre('save', async function () {
 
 // Virtual for average rating
 courseSchema.virtual('averageRating').get(function () {
-    if (this.courseRatings.length === 0) return 0;
+    if (!this.courseRatings || this.courseRatings.length === 0) return 0;
     const sum = this.courseRatings.reduce((acc, r) => acc + r.rating, 0);
     return Math.round((sum / this.courseRatings.length) * 10) / 10;
 });
