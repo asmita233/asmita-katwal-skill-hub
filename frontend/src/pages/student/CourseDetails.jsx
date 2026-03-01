@@ -164,6 +164,8 @@ const CourseDetails = () => {
     }
   }, [id, user]);
 
+  const isCourseEducator = user && courseData && (courseData.educator?._id === user.id || courseData.educator === user.id);
+
   useEffect(() => {
     if (id && enrolledCourses && enrolledCourses.length >= 0) {
       const isEnrolled = enrolledCourses.some((course) => {
@@ -190,7 +192,7 @@ const CourseDetails = () => {
       return;
     }
 
-    if (isAlreadyEnrolled) {
+    if (isAlreadyEnrolled || isCourseEducator) {
       navigate(`/player/${id}`);
       return;
     }
@@ -334,7 +336,7 @@ const CourseDetails = () => {
                         <div className="flex items-center gap-2">
                           <img
                             src={
-                              isAlreadyEnrolled || lecture.isPreviewFree
+                              isAlreadyEnrolled || isCourseEducator || lecture.isPreviewFree
                                 ? assets.play_icon
                                 : assets.lesson_icon
                             }
@@ -344,19 +346,19 @@ const CourseDetails = () => {
                           <p className="text-sm text-gray-700">
                             {lecture.lectureTitle}
                           </p>
-                          {(isAlreadyEnrolled || lecture.isPreviewFree) && (
+                          {(isAlreadyEnrolled || isCourseEducator || lecture.isPreviewFree) && (
                             <button
                               className="text-blue-600 text-xs ml-2 cursor-pointer"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (isAlreadyEnrolled) {
+                                if (isAlreadyEnrolled || isCourseEducator) {
                                   navigate(`/player/${id}`);
                                 } else {
                                   setPlayerData(lecture);
                                 }
                               }}
                             >
-                              {isAlreadyEnrolled ? 'Play' : 'Preview'}
+                              {isAlreadyEnrolled || isCourseEducator ? 'Play' : 'Preview'}
                             </button>
                           )}
                         </div>
@@ -432,7 +434,7 @@ const CourseDetails = () => {
               onClick={handleEnrollNow}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg mt-6 font-medium transition-colors"
             >
-              {isAlreadyEnrolled ? 'Continue Learning' : 'Enroll Now'}
+              {isAlreadyEnrolled || isCourseEducator ? 'Continue Learning' : 'Enroll Now'}
             </button>
 
             {!isAlreadyEnrolled && (
@@ -492,8 +494,8 @@ const CourseDetails = () => {
                   >
                     <svg
                       className={`w-10 h-10 transition-colors duration-150 ${(hoverRating || userRating) >= star
-                          ? 'text-yellow-400 drop-shadow-sm'
-                          : 'text-gray-300'
+                        ? 'text-yellow-400 drop-shadow-sm'
+                        : 'text-gray-300'
                         }`}
                       fill="currentColor"
                       viewBox="0 0 24 24"
@@ -528,8 +530,8 @@ const CourseDetails = () => {
               onClick={handleSubmitRating}
               disabled={ratingLoading || userRating === 0}
               className={`px-8 py-3 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center gap-2 ${userRating === 0
-                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 hover:shadow-blue-300 active:scale-95'
+                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 hover:shadow-blue-300 active:scale-95'
                 }`}
             >
               {ratingLoading ? (

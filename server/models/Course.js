@@ -100,7 +100,7 @@ courseSchema.pre('save', async function () {
 
 // Virtual for average rating
 courseSchema.virtual('averageRating').get(function () {
-    if (!this.courseRatings || this.courseRatings.length === 0) return 0;
+    if (!this.courseRatings || !Array.isArray(this.courseRatings) || this.courseRatings.length === 0) return 0;
     const sum = this.courseRatings.reduce((acc, r) => acc + r.rating, 0);
     return Math.round((sum / this.courseRatings.length) * 10) / 10;
 });

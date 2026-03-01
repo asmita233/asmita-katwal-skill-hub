@@ -136,18 +136,33 @@ const MyCourses = () => {
                   </td>
                   <td className="px-8 py-6">
                     <div className="flex items-center gap-4">
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          className="sr-only peer"
-                          checked={course.isPublished}
-                          onChange={() => togglePublishStatus(course._id, course.isPublished)}
-                        />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
-                      </label>
-                      <span className={`text-[10px] font-black uppercase tracking-widest ${course.isPublished ? 'text-emerald-600' : 'text-amber-600'}`}>
-                        {course.isPublished ? 'Live' : 'Draft'}
-                      </span>
+                      <div className="flex items-center gap-4">
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="sr-only peer"
+                            checked={course.isPublished}
+                            onChange={() => togglePublishStatus(course._id, course.isPublished)}
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                        </label>
+                        <span className={`text-[10px] font-black uppercase tracking-widest ${course.isPublished ? 'text-emerald-600' : 'text-amber-600'}`}>
+                          {course.isPublished ? 'Live' : 'Draft'}
+                        </span>
+                      </div>
+
+                      <div className="h-4 w-[1px] bg-gray-100 mx-1"></div>
+
+                      <button
+                        onClick={() => navigate(`/course-details/${course._id}`)}
+                        className="p-2 hover:bg-gray-100 rounded-xl transition-all group/view"
+                        title="View Course Details"
+                      >
+                        <svg className="w-4 h-4 text-gray-400 group-hover/view:text-blue-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      </button>
                     </div>
                   </td>
                 </tr>

@@ -65,6 +65,8 @@ const Player = () => {
     }
   }, [enrolledCourses, courseId]);
 
+  const isCourseEducator = user && courseData && (courseData.educator?._id === user.id || courseData.educator === user.id);
+
   // Initial data fetch for the course
   useEffect(() => {
     getCourseData();
