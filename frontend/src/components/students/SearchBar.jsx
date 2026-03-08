@@ -17,9 +17,7 @@ const SearchBar = ({ data }) => {
 
   /**
    * Search Submission Handler:
-   * 1. Prevents page reload.
-   * 2. If input is empty, redirects to the base courses list.
-   * 3. If input exists, redirects to the dynamic search route.
+  
    */
   const onSearchHandler = (e) => {
     e.preventDefault()

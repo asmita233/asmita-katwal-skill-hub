@@ -1,194 +1,253 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../../context/AppContext';
-import { assets } from '../../assets/assets';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
 const MyCourses = () => {
-  const { currency, navigate, calculateRating, backendUrl, getToken } = useContext(AppContext);
+  const { backendUrl, getToken, currency, navigate } = useContext(AppContext);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [courseToDelete, setCourseToDelete] = useState(null);
 
-  const fetchMyCourses = async () => {
+  const fetchCourses = async () => {
     try {
       const token = await getToken();
-      const { data } = await axios.get(backendUrl + '/api/courses/educator/my-courses', {
-        headers: { Authorization: `Bearer ${token}` }
+      if (!token) {
+        toast.error('Please log in to continue');
+        return;
+      }
+      const { data } = await axios.get(`${backendUrl}/api/courses/educator/my-courses`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (data.success) {
         setCourses(data.courses);
-      } else {
-        toast.error(data.message);
       }
     } catch (error) {
-      console.error('Error fetching courses:', error);
-      toast.error(error.response?.data?.message || error.message);
+      toast.error('Failed to fetch courses');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchMyCourses();
+    fetchCourses();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const togglePublishStatus = async (courseId, currentStatus) => {
+  const confirmDelete = (course) => {
+    setCourseToDelete(course);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteCourse = async () => {
+    if (!courseToDelete) return;
+    setDeletingId(courseToDelete._id);
     try {
       const token = await getToken();
-      const { data } = await axios.patch(`${backendUrl}/api/courses/${courseId}/publish`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
+      if (!token) {
+        toast.error('Please log in to continue');
+        return;
+      }
+      const { data } = await axios.delete(
+        `${backendUrl}/api/courses/${courseToDelete._id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       if (data.success) {
-        toast.success(data.message);
-        setCourses((prevCourses) =>
-          prevCourses.map((course) =>
-            course._id === courseId
-              ? { ...course, isPublished: !currentStatus }
-              : course
-          )
-        );
+        toast.success('Course deleted successfully');
+        setCourses(courses.filter((c) => c._id !== courseToDelete._id));
       } else {
-        toast.error(data.message);
+        toast.error(data.message || 'Failed to delete course');
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Error toggling publish status');
+      toast.error(
+        error.response?.data?.message || 'Error deleting course'
+      );
+    } finally {
+      setDeletingId(null);
+      setShowDeleteModal(false);
+      setCourseToDelete(null);
     }
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-200 border-t-purple-600"></div>
-          <p className="text-gray-500 font-medium">Fetching your courses...</p>
-        </div>
+      <div className="flex items-center justify-center py-20">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 animate-fadeIn">
-      <div className="flex items-center justify-between bg-white p-8 rounded-[40px] border border-gray-50 shadow-[0_8px_30px_rgb(0,0,0,0.02)]">
-        <div>
-          <h1 className="text-3xl font-black text-gray-900 tracking-tight">Master Catalog</h1>
-          <p className="text-gray-500 mt-1 font-medium">You have {courses.length} published courses.</p>
-        </div>
+    <div className="max-w-5xl">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-semibold text-gray-800">My Courses</h1>
         <button
           onClick={() => navigate('/educator/add-course')}
-          className="bg-gray-900 hover:bg-black text-white px-8 py-4 rounded-[20px] font-bold text-sm transition-all hover:scale-105 active:scale-95 shadow-xl shadow-gray-200 flex items-center gap-3"
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium"
         >
-          <div className="w-6 h-6 bg-white/10 rounded-lg flex items-center justify-center">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4"></path></svg>
-          </div>
-          Create New Course
+          + Add New Course
         </button>
       </div>
 
-      {/* Courses Table */}
-      <div className="bg-white rounded-[40px] shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-gray-50 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-gray-50/50">
-                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Course Details</th>
-                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Total Revenue</th>
-                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Students</th>
-                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {courses.map((course) => (
-                <tr key={course._id} className="hover:bg-gray-50/50 transition-colors group">
-                  <td className="px-8 py-6">
-                    <div className="flex items-center gap-5">
-                      <div className="w-24 h-16 rounded-2xl overflow-hidden shadow-sm relative group-hover:scale-105 transition-transform">
-                        <img
-                          src={course.courseThumbnail || '/placeholder.png'}
-                          className="w-full h-full object-cover"
-                          alt=""
-                        />
-                      </div>
-                      <div>
-                        <p className="font-bold text-gray-900 group-hover:text-purple-600 transition-colors">{course.courseTitle}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">ID: {course._id.substring(0, 6)}</span>
-                          <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full uppercase tracking-tighter">{course.category || 'General'}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-8 py-6">
-                    <div className="flex flex-col">
-                      <span className="text-sm font-black text-gray-900">{currency}{course.enrolledStudents.length * course.coursePrice}</span>
-                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">{currency}{course.coursePrice} per unit</span>
-                    </div>
-                  </td>
-                  <td className="px-8 py-6">
-                    <div className="flex items-center gap-3">
-                      <div className="flex -space-x-2">
-                        {[1].map(i => (
-                          <div key={i} className="w-6 h-6 rounded-full bg-purple-100 border-2 border-white flex items-center justify-center text-[8px] font-black text-purple-600">U</div>
-                        ))}
-                      </div>
-                      <span className="text-sm font-bold text-gray-700">{course.enrolledStudents.length} Students</span>
-                    </div>
-                  </td>
-                  <td className="px-8 py-6">
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-4">
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            className="sr-only peer"
-                            checked={course.isPublished}
-                            onChange={() => togglePublishStatus(course._id, course.isPublished)}
-                          />
-                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
-                        </label>
-                        <span className={`text-[10px] font-black uppercase tracking-widest ${course.isPublished ? 'text-emerald-600' : 'text-amber-600'}`}>
-                          {course.isPublished ? 'Live' : 'Draft'}
-                        </span>
-                      </div>
-
-                      <div className="h-4 w-[1px] bg-gray-100 mx-1"></div>
-
-                      <button
-                        onClick={() => navigate(`/course-details/${course._id}`)}
-                        className="p-2 hover:bg-gray-100 rounded-xl transition-all group/view"
-                        title="View Course Details"
-                      >
-                        <svg className="w-4 h-4 text-gray-400 group-hover/view:text-blue-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {courses.length === 0 ? (
+        <div className="text-center py-16 bg-gray-50 rounded-lg">
+          <p className="text-gray-500 mb-4">You haven't created any courses yet.</p>
+          <button
+            onClick={() => navigate('/educator/add-course')}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+          >
+            Create Your First Course
+          </button>
         </div>
-
-        {courses.length === 0 && (
-          <div className="p-20 text-center flex flex-col items-center">
-            <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-6">
-              <svg className="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            </div>
-            <h3 className="text-lg font-bold text-gray-900">Your catalog is empty</h3>
-            <p className="text-gray-400 mt-2 max-w-xs mx-auto">Start your teaching journey by creating your first course. It only takes a few minutes.</p>
-            <button
-              onClick={() => navigate('/educator/add-course')}
-              className="mt-8 px-8 py-4 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-[20px] font-bold text-sm transition-all"
+      ) : (
+        <div className="space-y-4">
+          {courses.map((course) => (
+            <div
+              key={course._id}
+              className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:shadow-sm transition bg-white"
             >
-              Get Started
-            </button>
+              {/* Thumbnail */}
+              <img
+                src={course.courseThumbnail || '/placeholder.png'}
+                alt={course.courseTitle}
+                className="w-28 h-20 object-cover rounded-lg bg-gray-100 flex-shrink-0"
+              />
+
+              {/* Course Info */}
+              <div className="flex-1 min-w-0">
+                <h3 className="font-medium text-gray-800 truncate">
+                  {course.courseTitle}
+                </h3>
+                <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
+                  <span>{course.category}</span>
+                  <span>•</span>
+                  <span>{course.level}</span>
+                  <span>•</span>
+                  <span>{course.enrolledStudents?.length || 0} students</span>
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  {course.discount > 0 && (
+                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
+                      {course.discount}% off
+                    </span>
+                  )}
+                  <span className="text-sm font-medium text-gray-800">
+                    {currency}
+                    {(
+                      course.coursePrice -
+                      (course.coursePrice * (course.discount || 0)) / 100
+                    ).toFixed(2)}
+                  </span>
+                  {course.discount > 0 && (
+                    <span className="text-xs text-gray-400 line-through">
+                      {currency}{course.coursePrice}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Status Badge */}
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-medium flex-shrink-0 ${course.isPublished
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-yellow-100 text-yellow-700'
+                  }`}
+              >
+                {course.isPublished ? 'Published' : 'Draft'}
+              </span>
+
+              {/* Actions */}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <button
+                  onClick={() => navigate(`/course/${course._id}`)}
+                  className="px-3 py-1.5 text-sm text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition"
+                >
+                  View
+                </button>
+                <button
+                  onClick={() => confirmDelete(course)}
+                  disabled={deletingId === course._id}
+                  className={`px-3 py-1.5 text-sm text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition ${deletingId === course._id
+                    ? 'opacity-50 cursor-not-allowed'
+                    : ''
+                    }`}
+                >
+                  {deletingId === course._id ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && courseToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-sm shadow-xl">
+            <div className="text-center">
+              <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg
+                  className="w-7 h-7 text-red-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                Delete Course?
+              </h3>
+              <p className="text-sm text-gray-500 mb-1">
+                Are you sure you want to delete
+              </p>
+              <p className="text-sm font-medium text-gray-700 mb-1">
+                "{courseToDelete.courseTitle}"
+              </p>
+              {courseToDelete.enrolledStudents?.length > 0 && (
+                <p className="text-xs text-red-500 mt-2 bg-red-50 px-3 py-2 rounded-lg">
+                  ⚠️ This course has
+                  {courseToDelete.enrolledStudents.length} enrolled student(s).
+                  They will lose access.
+                </p>
+              )}
+              <p className="text-xs text-gray-400 mt-2">
+                This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex items-center gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setCourseToDelete(null);
+                }}
+                className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteCourse}
+                disabled={deletingId === courseToDelete?._id}
+                className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm font-medium disabled:opacity-50"
+              >
+                {deletingId ? 'Deleting...' : 'Yes, Delete'}
+              </button>
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default MyCourses;
+

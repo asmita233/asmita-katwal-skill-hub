@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { AppContext } from '../../context/AppContext';
 import { assets } from '../../assets/assets';
@@ -14,7 +14,7 @@ const Player = () => {
   const { courseId } = useParams();
 
   // Extract shared state and persistence methods from the context
-  const { navigate, backendUrl, getToken, enrolledCourses, fetchEnrolledCourses } = useContext(AppContext);
+  const { navigate, backendUrl, getToken, enrolledCourses, fetchEnrolledCourses, user } = useContext(AppContext);
 
   // --- Component State Management ---
   const [courseData, setCourseData] = useState(null); // Full course structure and metadata
@@ -22,6 +22,50 @@ const Player = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true); // Toggle for course content sidebar
   const [completedLectures, setCompletedLectures] = useState([]); // List of IDs student has finished
   const [openChapters, setOpenChapters] = useState({}); // Tracking expanded/collapsed accordion sections
+  const [accessVerified, setAccessVerified] = useState(false); // Whether the user has access to the course
+  const [accessLoading, setAccessLoading] = useState(true); // Loading state for access check
+
+  // Track if the video should be playing (auto-play when changing lectures)
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  // Ref for the native video element
+  const videoRef = useRef(null);
+
+  /**
+   * Detect if a URL is a direct video file (Cloudinary, S3, etc.) vs a streaming service (YouTube, Vimeo)
+   */
+  const isDirectVideoUrl = (url) => {
+    if (!url) return false;
+    // Cloudinary, S3, or any direct file URL
+    const directPatterns = [
+      /cloudinary\.com/i,
+      /\.mp4(\?|$)/i,
+      /\.webm(\?|$)/i,
+      /\.ogg(\?|$)/i,
+      /\.mov(\?|$)/i,
+      /\.avi(\?|$)/i,
+      /s3\.amazonaws\.com/i,
+      /blob:/i,
+    ];
+    return directPatterns.some(pattern => pattern.test(url));
+  };
+
+  /**
+   * Detect if a URL is a YouTube or Vimeo URL that ReactPlayer can handle
+   */
+  const isStreamingUrl = (url) => {
+    if (!url) return false;
+    const streamingPatterns = [
+      /youtube\.com/i,
+      /youtu\.be/i,
+      /vimeo\.com/i,
+      /dailymotion\.com/i,
+      /soundcloud\.com/i,
+      /facebook\.com.*video/i,
+      /twitch\.tv/i,
+    ];
+    return streamingPatterns.some(pattern => pattern.test(url));
+  };
 
   /**
    * Fetch course details including curriculum (chapters/lectures)
@@ -55,6 +99,32 @@ const Player = () => {
     }
   }
 
+  /**
+   * Verify that the user has access to this course (enrolled or is the educator)
+   */
+  const verifyAccess = () => {
+    if (!user || !courseData) return;
+
+    // Check if user is the educator
+    const isEducator = courseData.educator?._id === user.id || courseData.educator === user.id;
+
+    // Check if user is enrolled
+    const isEnrolled = enrolledCourses?.some((course) => {
+      if (!course || !course.courseId) return false;
+      const enrolledCourseId = course.courseId._id || course.courseId;
+      return enrolledCourseId && enrolledCourseId.toString() === courseId.toString();
+    });
+
+    if (isEducator || isEnrolled) {
+      setAccessVerified(true);
+    } else {
+      // User has no access - redirect to course page
+      toast.error('You need to enroll in this course first!');
+      navigate(`/course/${courseId}`);
+    }
+    setAccessLoading(false);
+  };
+
   // Sync student's specific course progress from the context whenever enrolledCourses data refreshes
   useEffect(() => {
     if (enrolledCourses && enrolledCourses.length > 0) {
@@ -65,16 +135,35 @@ const Player = () => {
     }
   }, [enrolledCourses, courseId]);
 
-  const isCourseEducator = user && courseData && (courseData.educator?._id === user.id || courseData.educator === user.id);
+  // Check access once we have both user data, course data, and enrolled courses
+  useEffect(() => {
+    if (user && courseData && enrolledCourses) {
+      verifyAccess();
+    }
+  }, [user, courseData, enrolledCourses]);
 
   // Initial data fetch for the course
   useEffect(() => {
     getCourseData();
   }, [courseId]);
 
+  // Sync isPlaying when lecture changes — also handle native video element
+  useEffect(() => {
+    if (currentLecture) {
+      setIsPlaying(true);
+      // For native video, we need to reload the source
+      if (videoRef.current && isDirectVideoUrl(currentLecture.lectureUrl)) {
+        videoRef.current.load();
+        videoRef.current.play().catch(() => {
+          // Autoplay may be blocked, that's OK
+          setIsPlaying(false);
+        });
+      }
+    }
+  }, [currentLecture]);
+
   /**
-   * Notify backend that a lecture identifies has been completed by the student
-   * @param {string} lectureId 
+   * Notify backend that a lecture has been completed by the student
    */
   const handleLectureComplete = async (lectureId) => {
     try {
@@ -105,7 +194,7 @@ const Player = () => {
   };
 
   /**
-   * Logic to determine percentage of course completion based on total lectures vs completed lectures
+   * Calculate percentage of course completion
    */
   const calculateProgress = () => {
     if (!courseData) return 0;
@@ -118,11 +207,136 @@ const Player = () => {
       : 0;
   };
 
+  /**
+   * Render the video player based on the URL type
+   */
+  const renderVideoPlayer = () => {
+    if (!currentLecture?.lectureUrl) {
+      return (
+        <div className="w-full h-full flex flex-col items-center justify-center text-white text-lg gap-4">
+          <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center">
+            <svg className="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+          </div>
+          <p className="text-gray-400 font-medium">No video URL found for this lecture</p>
+          <p className="text-gray-500 text-sm">The educator hasn't uploaded a video yet.</p>
+        </div>
+      );
+    }
+
+    const url = currentLecture.lectureUrl;
+
+    // For direct video files (Cloudinary, S3, etc.) — use native HTML5 video
+    if (isDirectVideoUrl(url)) {
+      return (
+        <video
+          ref={videoRef}
+          controls
+          playsInline
+          preload="auto"
+          className="w-full h-full object-contain bg-black"
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
+          onEnded={() => {
+            setIsPlaying(false);
+            handleLectureComplete(currentLecture?.lectureId);
+          }}
+          onError={(e) => {
+            console.error('Native video error:', e);
+            toast.error('Video failed to load. The file may be unavailable or the format is unsupported.');
+          }}
+        >
+          <source src={url} type="video/mp4" />
+          <source src={url} type="video/webm" />
+          Your browser does not support HTML5 video.
+        </video>
+      );
+    }
+
+    // For YouTube, Vimeo, etc. — use ReactPlayer
+    if (isStreamingUrl(url)) {
+      return (
+        <ReactPlayer
+          url={url}
+          controls={true}
+          playing={isPlaying}
+          muted={false}
+          width="100%"
+          height="100%"
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
+          onEnded={() => {
+            setIsPlaying(false);
+            handleLectureComplete(currentLecture?.lectureId);
+          }}
+          onError={(e) => {
+            console.error('ReactPlayer Error:', e);
+            toast.error('Could not load the video. Please check the source URL.');
+          }}
+          config={{
+            youtube: {
+              playerVars: { showinfo: 1, rel: 0 }
+            },
+          }}
+        />
+      );
+    }
+
+    // Fallback: Try native video first, then ReactPlayer
+    return (
+      <video
+        ref={videoRef}
+        controls
+        playsInline
+        preload="auto"
+        className="w-full h-full object-contain bg-black"
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
+        onEnded={() => {
+          setIsPlaying(false);
+          handleLectureComplete(currentLecture?.lectureId);
+        }}
+        onError={(e) => {
+          console.error('Fallback video error:', e);
+          toast.error('Video could not be loaded.');
+        }}
+      >
+        <source src={url} type="video/mp4" />
+        Your browser does not support this video format.
+      </video>
+    );
+  };
+
   // Standard loading screen while data is arriving from API
-  if (!courseData) {
+  if (!courseData || accessLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+          <p className="text-gray-500 text-sm">Loading course content...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If access not verified, don't render the player
+  if (!accessVerified) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">Access Denied</h2>
+          <p className="text-gray-500 mb-4">You need to enroll in this course to access the content.</p>
+          <button
+            onClick={() => navigate(`/course/${courseId}`)}
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
+          >
+            Go to Course Page
+          </button>
+        </div>
       </div>
     );
   }
@@ -169,26 +383,19 @@ const Player = () => {
       </div>
 
       <div className="flex flex-1">
-        {/* Main Content Area: YouTube Player + Lecture Description + Q&A */}
+        {/* Main Content Area: Video Player + Lecture Description + Q&A */}
         <div className={`flex-1 p-4 md:p-8 ${sidebarOpen ? 'md:mr-80' : ''}`}>
-          <div className="bg-black rounded-lg overflow-hidden aspect-video mb-6">
-            {currentLecture?.lectureUrl ? (
-              <ReactPlayer
-                url={currentLecture.lectureUrl}
-                controls={true}
-                width="100%"
-                height="100%"
-                onEnded={() => handleLectureComplete(currentLecture?.lectureId)}
-                config={{
-                  youtube: {
-                    playerVars: { showinfo: 1 }
-                  }
-                }}
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-white text-lg">
-                <p>Video not available</p>
-              </div>
+          <div className="bg-black rounded-lg overflow-hidden aspect-video mb-6 shadow-lg shadow-gray-200">
+            {renderVideoPlayer()}
+          </div>
+
+          {/* Debug Info - Video Source URL */}
+          <div className="mb-4 text-[10px] text-gray-300 truncate">
+            Source: {currentLecture?.lectureUrl || 'No URL found'}
+            {currentLecture?.lectureUrl && (
+              <span className="ml-2 text-gray-400">
+                ({isDirectVideoUrl(currentLecture.lectureUrl) ? 'Direct File' : isStreamingUrl(currentLecture.lectureUrl) ? 'Streaming' : 'Unknown'})
+              </span>
             )}
           </div>
 
@@ -234,7 +441,7 @@ const Player = () => {
               )}
             </div>
 
-            {/* About Course Section (Truncated Description) */}
+            {/* About Course Section */}
             <div className="mt-6 pt-6 border-t border-gray-100">
               <h3 className="font-medium text-gray-800 mb-3">About this course</h3>
               <div
@@ -308,14 +515,13 @@ const Player = () => {
                     return (
                       <button
                         key={lecture.lectureId}
-                        // Change the current video by clicking on Sidebar items
                         onClick={() => setCurrentLecture(lecture)}
                         className={`w-full px-4 py-3 flex items-center gap-3 text-left transition ${isActive
                           ? 'bg-blue-50 border-l-2 border-blue-600'
                           : 'hover:bg-gray-100'
                           }`}
                       >
-                        {/* Visual indicator (circle) for active and completion states */}
+                        {/* Visual indicator for active and completion states */}
                         <div
                           className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${isCompleted
                             ? 'bg-green-500 text-white'

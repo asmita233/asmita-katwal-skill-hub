@@ -1,6 +1,7 @@
 import React from 'react'
 import Hero from '../../components/students/Hero'
 import Companies from '../../components/students/Companies'
+import PathSection from '../../components/students/PathSection'
 import CoursesSection from '../../components/students/coursesSection'
 import TestimonialSection from '../../components/students/TestimonialSection'
 import CallToAction from '../../components/students/CallToAction'
@@ -27,6 +28,7 @@ const Home = () => {
       {/* Page sections providing a full marketing lifecycle for students */}
       <Hero />
       <Companies />
+      <PathSection />
       <CoursesSection />
       <TestimonialSection />
       <CallToAction />

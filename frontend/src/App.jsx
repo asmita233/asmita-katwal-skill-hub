@@ -39,8 +39,35 @@ const App = () => {
     location.pathname.startsWith('/educator') ||
     location.pathname.startsWith('/player');
 
+  // State to track if loading is taking too long
+  const [showError, setShowError] = React.useState(false);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!isLoaded) setShowError(true);
+    }, 10000); // 10 seconds timeout
+    return () => clearTimeout(timer);
+  }, [isLoaded]);
+
   // Prevent rendering anything until Clerk has finished loading user status
-  if (!isLoaded) return null;
+  if (!isLoaded) return (
+    <div className='flex flex-col items-center justify-center min-h-screen bg-gray-50'>
+      {!showError ? (
+        <div className='animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500'></div>
+      ) : (
+        <div className='text-center p-6 bg-white shadow-lg rounded-lg border border-red-100 max-w-sm'>
+          <h2 className='text-xl font-bold text-red-600 mb-2'>Connection Error</h2>
+          <p className='text-gray-600 mb-4'>We couldn't connect to the authentication service. Please check your internet connection.</p>
+          <button
+            onClick={() => window.location.reload()}
+            className='px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors'
+          >
+            Retry Now
+          </button>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div className='text-default min-h-screen bg-white'>

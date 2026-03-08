@@ -34,8 +34,10 @@ const AddCourses = () => {
   const [lectureDuration, setLectureDuration] = useState('');
   const [lectureUrl, setLectureUrl] = useState('');
   const [lectureVideo, setLectureVideo] = useState(null);
+  const [lecturePdf, setLecturePdf] = useState(null);
   const [isPreviewFree, setIsPreviewFree] = useState(false);
   const [isUploadingVideo, setIsUploadingVideo] = useState(false);
+  const [isUploadingPdf, setIsUploadingPdf] = useState(false);
 
   // Global loading state for API requests
   const [loading, setLoading] = useState(false);
@@ -99,8 +101,10 @@ const AddCourses = () => {
     setLectureDuration('');
     setLectureUrl('');
     setLectureVideo(null);
+    setLecturePdf(null);
     setIsPreviewFree(false);
     setIsUploadingVideo(false);
+    setIsUploadingPdf(false);
   };
 
   // Add lecture to chapter
@@ -154,6 +158,39 @@ const AddCourses = () => {
       }
     }
 
+    // --- PDF Upload Logic ---
+    let finalPdfUrl = '';
+    if (lecturePdf) {
+      setIsUploadingPdf(true);
+      try {
+        const token = await getToken();
+        const formData = new FormData();
+        formData.append('pdf', lecturePdf);
+
+        const { data } = await axios.post(`${backendUrl}/api/courses/upload-pdf`, formData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+
+        if (data.success) {
+          finalPdfUrl = data.pdfUrl;
+          toast.success('Study material (PDF) uploaded!');
+        } else {
+          toast.error(data.message || 'PDF upload failed');
+          setIsUploadingPdf(false);
+          return;
+        }
+      } catch (error) {
+        console.error('Error uploading PDF:', error);
+        toast.error(error.response?.data?.message || 'Error uploading PDF');
+        setIsUploadingPdf(false);
+        return;
+      }
+    }
+
+
     const updatedChapters = chapters.map((chapter) => {
       if (chapter.chapterId === currentChapterId) {
         const newLecture = {
@@ -162,6 +199,7 @@ const AddCourses = () => {
           lectureTitle,
           lectureDuration: parseInt(lectureDuration) || 0,
           lectureUrl: finalVideoUrl,
+          lecturePdf: finalPdfUrl,
           isPreviewFree,
         };
         return {
@@ -174,6 +212,7 @@ const AddCourses = () => {
 
     setChapters(updatedChapters);
     setIsUploadingVideo(false);
+    setIsUploadingPdf(false);
     setShowLectureModal(false);
   };
 
@@ -583,6 +622,40 @@ const AddCourses = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Study Material (PDF)
+                </label>
+                <div className="flex items-center gap-2">
+                  <label className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 border-2 border-dashed rounded-lg cursor-pointer transition ${lecturePdf ? 'border-red-400 bg-red-50' : 'border-gray-300 hover:border-red-400'} ${isUploadingPdf ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                    <input
+                      type="file"
+                      accept=".pdf"
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files[0]) {
+                          setLecturePdf(e.target.files[0]);
+                        }
+                      }}
+                      disabled={isUploadingPdf}
+                    />
+                    <svg className="w-5 h-5 text-red-500 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                    <span className="text-sm text-gray-600 truncate">
+                      {lecturePdf ? lecturePdf.name : 'Upload Study Material (PDF)'}
+                    </span>
+                  </label>
+                  {lecturePdf && !isUploadingPdf && (
+                    <button
+                      type="button"
+                      onClick={() => setLecturePdf(null)}
+                      className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
+                    >
+                      <img src={assets.cross_icon} alt="" className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Video Option
                 </label>
                 <div className="space-y-3">
@@ -677,7 +750,7 @@ const AddCourses = () => {
                 disabled={isUploadingVideo}
                 className={`px-4 py-2 bg-blue-600 text-white rounded-lg transition ${isUploadingVideo ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'}`}
               >
-                {isUploadingVideo ? 'Uploading...' : 'Add Lecture'}
+                {isUploadingVideo || isUploadingPdf ? 'Uploading...' : 'Add Lecture'}
               </button>
             </div>
           </div>

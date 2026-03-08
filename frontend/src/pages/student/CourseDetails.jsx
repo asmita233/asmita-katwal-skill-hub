@@ -192,7 +192,7 @@ const CourseDetails = () => {
       return;
     }
 
-    if (isAlreadyEnrolled || isCourseEducator) {
+    if (isAlreadyEnrolled) {
       navigate(`/player/${id}`);
       return;
     }
@@ -224,6 +224,19 @@ const CourseDetails = () => {
   const extractVideoId = (url) => {
     const match = url.match(/(?:youtu\.be\/|youtube\.com(?:\/embed\/|\/v\/|\/watch\?v=|\/watch\?.+&v=))([^"&?\/\s]{11})/);
     return match ? match[1] : null;
+  };
+
+  // Detect if a URL is a direct video file (Cloudinary, S3, etc.)
+  const isDirectVideoUrl = (url) => {
+    if (!url) return false;
+    const directPatterns = [
+      /cloudinary\.com/i,
+      /\.mp4(\?|$)/i,
+      /\.webm(\?|$)/i,
+      /\.ogg(\?|$)/i,
+      /s3\.amazonaws\.com/i,
+    ];
+    return directPatterns.some(pattern => pattern.test(url));
   };
 
   // Star label descriptions
@@ -387,13 +400,28 @@ const CourseDetails = () => {
         {/* Right Column: Floating Pricing and Enrollment Card */}
         <div className="max-w-md z-10 shadow-lg rounded-lg overflow-hidden bg-white border border-gray-100 sticky top-24">
           {playerData ? (
-            <ReactPlayer
-              url={playerData.lectureUrl}
-              playing={true}
-              controls={true}
-              width="100%"
-              height="200px"
-            />
+            isDirectVideoUrl(playerData.lectureUrl) ? (
+              <video
+                controls
+                autoPlay
+                muted
+                playsInline
+                preload="auto"
+                style={{ width: '100%', height: '200px', objectFit: 'contain', background: '#000' }}
+              >
+                <source src={playerData.lectureUrl} type="video/mp4" />
+                Your browser does not support HTML5 video.
+              </video>
+            ) : (
+              <ReactPlayer
+                url={playerData.lectureUrl}
+                playing={true}
+                muted={true}
+                controls={true}
+                width="100%"
+                height="200px"
+              />
+            )
           ) : (
             <img
               src={courseData.courseThumbnail}
@@ -432,12 +460,15 @@ const CourseDetails = () => {
 
             <button
               onClick={handleEnrollNow}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg mt-6 font-medium transition-colors"
+              className={`w-full py-3 rounded-lg mt-6 font-medium transition-colors ${isAlreadyEnrolled
+                ? 'bg-green-600 hover:bg-green-700 text-white'
+                : 'bg-blue-600 hover:bg-blue-700 text-white'
+                }`}
             >
-              {isAlreadyEnrolled || isCourseEducator ? 'Continue Learning' : 'Enroll Now'}
+              {isAlreadyEnrolled ? '▶ Continue Learning' : 'Enroll Now'}
             </button>
 
-            {!isAlreadyEnrolled && (
+            {!isAlreadyEnrolled && !isCourseEducator && (
               <button
                 onClick={toggleWishlist}
                 disabled={wishlistLoading}
