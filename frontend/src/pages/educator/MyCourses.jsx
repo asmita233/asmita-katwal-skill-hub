@@ -102,7 +102,7 @@ const MyCourses = () => {
           >
             Create Your First Course
           </button>
-        </div>
+        </div> 
       ) : (
         <div className="space-y-4">
           {courses.map((course) => (

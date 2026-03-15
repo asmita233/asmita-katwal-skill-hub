@@ -14,7 +14,7 @@ const Player = () => {
   const { courseId } = useParams();
 
   // Extract shared state and persistence methods from the context
-  const { navigate, backendUrl, getToken, enrolledCourses, fetchEnrolledCourses, user } = useContext(AppContext);
+  const { navigate, backendUrl, getToken, enrolledCourses, fetchEnrolledCourses, user, isEducator } = useContext(AppContext);
 
   // --- Component State Management ---
   const [courseData, setCourseData] = useState(null); // Full course structure and metadata
@@ -106,7 +106,7 @@ const Player = () => {
     if (!user || !courseData) return;
 
     // Check if user is the educator
-    const isEducator = courseData.educator?._id === user.id || courseData.educator === user.id;
+    const isCourseEducator = courseData.educator?._id === user.id || courseData.educator === user.id;
 
     // Check if user is enrolled
     const isEnrolled = enrolledCourses?.some((course) => {
@@ -115,7 +115,7 @@ const Player = () => {
       return enrolledCourseId && enrolledCourseId.toString() === courseId.toString();
     });
 
-    if (isEducator || isEnrolled) {
+    if (isCourseEducator || isEnrolled || isEducator) {
       setAccessVerified(true);
     } else {
       // User has no access - redirect to course page

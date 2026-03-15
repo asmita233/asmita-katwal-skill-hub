@@ -23,7 +23,8 @@ const CourseDetails = () => {
     backendUrl,
     getToken,
     enrolledCourses,
-    fetchEnrolledCourses
+    fetchEnrolledCourses,
+    isEducator
   } = useContext(AppContext);
 
   // Component state management
@@ -165,6 +166,8 @@ const CourseDetails = () => {
   }, [id, user]);
 
   const isCourseEducator = user && courseData && (courseData.educator?._id === user.id || courseData.educator === user.id);
+  // Ensure that all educators can view full course content without enrolling
+  const canViewFullCourse = isAlreadyEnrolled || isCourseEducator || isEducator;
 
   useEffect(() => {
     if (id && enrolledCourses && enrolledCourses.length >= 0) {
@@ -349,7 +352,7 @@ const CourseDetails = () => {
                         <div className="flex items-center gap-2">
                           <img
                             src={
-                              isAlreadyEnrolled || isCourseEducator || lecture.isPreviewFree
+                              canViewFullCourse || lecture.isPreviewFree
                                 ? assets.play_icon
                                 : assets.lesson_icon
                             }
@@ -359,19 +362,19 @@ const CourseDetails = () => {
                           <p className="text-sm text-gray-700">
                             {lecture.lectureTitle}
                           </p>
-                          {(isAlreadyEnrolled || isCourseEducator || lecture.isPreviewFree) && (
+                          {(canViewFullCourse || lecture.isPreviewFree) && (
                             <button
                               className="text-blue-600 text-xs ml-2 cursor-pointer"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (isAlreadyEnrolled || isCourseEducator) {
+                                if (canViewFullCourse) {
                                   navigate(`/player/${id}`);
                                 } else {
                                   setPlayerData(lecture);
                                 }
                               }}
                             >
-                              {isAlreadyEnrolled || isCourseEducator ? 'Play' : 'Preview'}
+                              {canViewFullCourse ? 'Play' : 'Preview'}
                             </button>
                           )}
                         </div>
@@ -459,16 +462,16 @@ const CourseDetails = () => {
             </div>
 
             <button
-              onClick={handleEnrollNow}
-              className={`w-full py-3 rounded-lg mt-6 font-medium transition-colors ${isAlreadyEnrolled
+              onClick={() => canViewFullCourse ? navigate(`/player/${id}`) : handleEnrollNow()}
+              className={`w-full py-3 rounded-lg mt-6 font-medium transition-colors ${canViewFullCourse
                 ? 'bg-green-600 hover:bg-green-700 text-white'
                 : 'bg-blue-600 hover:bg-blue-700 text-white'
                 }`}
             >
-              {isAlreadyEnrolled ? '▶ Continue Learning' : 'Enroll Now'}
+              {isAlreadyEnrolled ? '▶ Continue Learning' : (canViewFullCourse ? '▶ View Course' : 'Enroll Now')}
             </button>
 
-            {!isAlreadyEnrolled && !isCourseEducator && (
+            {!canViewFullCourse && (
               <button
                 onClick={toggleWishlist}
                 disabled={wishlistLoading}

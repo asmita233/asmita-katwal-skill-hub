@@ -58,7 +58,7 @@ const EducatorReviews = () => {
         count: allReviews.filter(r => r.rating === star).length,
         percentage: totalReviews > 0
             ? Math.round((allReviews.filter(r => r.rating === star).length / totalReviews) * 100)
-            : 0
+            : 0 
     }));
 
     if (loading) {
