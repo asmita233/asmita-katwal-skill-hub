@@ -37,12 +37,21 @@ const Navbar = () => {
 
         {/* Desktop Menu - Visible on Medium screens and above */}
         <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-gray-600">
-          <Link
-            to="/course-list"
-            className="hover:text-blue-600 transition"
-          >
-            All Courses
-          </Link>
+          {user ? (
+            <Link
+              to="/course-list"
+              className="hover:text-blue-600 transition"
+            >
+              All Courses
+            </Link>
+          ) : (
+            <button
+              onClick={() => openSignIn()}
+              className="hover:text-blue-600 transition"
+            >
+              All Courses
+            </button>
+          )}
 
           {/* Authenticated user links */}
           {user && (

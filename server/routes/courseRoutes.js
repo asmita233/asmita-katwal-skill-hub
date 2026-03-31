@@ -15,6 +15,13 @@ import {
     getEducatorCourses,
     getEducatorDashboard,
     getEnrolledStudents,
+    // Content Management
+    updateCourseContent,
+    reorderContent,
+    deleteSection,
+    deleteLecture,
+    updateSection,
+    updateLecture,
 } from '../controllers/courseController.js';
 
 const router = express.Router();
@@ -44,12 +51,12 @@ const upload = multer({
 
 const uploadVideoMulter = multer({
     storage,
-    limits: { fileSize: 100 * 1024 * 1024 }, // 100MB limit for videos
+    limits: { fileSize: 500 * 1024 * 1024 }, // 500MB limit for videos (increased for production use)
     fileFilter: (req, file, cb) => {
         if (file.mimetype.startsWith('video/')) {
             cb(null, true);
         } else {
-            cb(new Error('Only videos are allowed'), false);
+            cb(new Error('Only video files are allowed (mp4, webm, etc.)'), false);
         }
     },
 });
@@ -69,6 +76,14 @@ const uploadPdfMulter = multer({
 
 // Public routes
 router.get('/', getAllCourses);
+
+// Educator routes — MUST come BEFORE /:id to avoid route collision
+// (otherwise 'educator' would be treated as a course ID)
+router.get('/educator/my-courses', requireAuth(), getEducatorCourses);
+router.get('/educator/dashboard', requireAuth(), getEducatorDashboard);
+router.get('/educator/students', requireAuth(), getEnrolledStudents);
+
+// Public route for single course details (must come AFTER /educator/* routes)
 router.get('/:id', getCourseById);
 
 // Protected routes - require authentication
@@ -81,9 +96,14 @@ router.post('/upload-pdf', requireAuth(), uploadPdfMulter.single('pdf'), uploadP
 router.patch('/:id/publish', requireAuth(), togglePublish);
 router.post('/:id/rating', requireAuth(), addRating);
 
-// Educator routes
-router.get('/educator/my-courses', requireAuth(), getEducatorCourses);
-router.get('/educator/dashboard', requireAuth(), getEducatorDashboard);
-router.get('/educator/students', requireAuth(), getEnrolledStudents);
+// ============================================================
+// CONTENT MANAGEMENT ROUTES
+// ============================================================
+router.put('/:id/content', requireAuth(), updateCourseContent);
+router.put('/:id/reorder', requireAuth(), reorderContent);
+router.delete('/:id/section/:sectionId', requireAuth(), deleteSection);
+router.delete('/:id/section/:sectionId/lecture/:lectureId', requireAuth(), deleteLecture);
+router.put('/:id/section/:sectionId', requireAuth(), updateSection);
+router.put('/:id/section/:sectionId/lecture/:lectureId', requireAuth(), updateLecture);
 
 export default router;

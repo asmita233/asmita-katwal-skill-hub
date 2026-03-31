@@ -12,11 +12,11 @@ import courseRoutes from './routes/courseRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import questionRoutes from './routes/questionRoutes.js';
 import certificateRoutes from './routes/certificateRoutes.js';
+import reportsRoutes from './routes/reportsRoutes.js';
 
 const app = express(); // Initialize the Express application
 
-// Initializing Database and Media storage connections
-connectDB();
+// Initializing Media storage connection
 connectCloudinary();
 
 // Stripe webhook route - CRITICAL: Must be placed before express.json() 
@@ -52,6 +52,7 @@ app.use('/api/courses', courseRoutes); // Handles course creation and listing
 app.use('/api/payment', paymentRoutes); // Handles Stripe sessions
 app.use('/api/questions', questionRoutes); // Handles Q&A messaging
 app.use('/api/certificates', certificateRoutes); // Handles certificate logic
+app.use('/api', reportsRoutes); // Specialized routes for report screenshots (S3-T01, S3-T02)
 
 // Health check
 app.get('/', (req, res) => {
@@ -88,6 +89,14 @@ app.use((err, req, res, next) => {
 // Port
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`Server running on PORT ${PORT}`);
+const startServer = async () => {
+  await connectDB();
+  app.listen(PORT, () => {
+    console.log(`Server running on PORT ${PORT}`);
+  });
+};
+
+startServer().catch((error) => {
+  console.error('Failed to start server:', error.message);
+  process.exit(1);
 });

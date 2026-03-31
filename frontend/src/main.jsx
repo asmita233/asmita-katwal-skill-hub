@@ -1,5 +1,6 @@
 // Importing the necessary modules for React and routing
 import { createRoot } from 'react-dom/client'
+import axios from 'axios'
 import './index.css'
 import App from './App.jsx'
 import { BrowserRouter } from 'react-router-dom'
@@ -13,6 +14,17 @@ const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
 if (!PUBLISHABLE_KEY) {
   throw new Error('Missing Publishable Key')
 }
+
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.code === 'ERR_NETWORK' || error?.message === 'Network Error') {
+      error.message = 'Backend server is unreachable. Start the server and try again.'
+    }
+
+    return Promise.reject(error)
+  }
+)
 
 // Rendering the main App within the necessary providers:
 // 1. ClerkProvider for authentication management

@@ -66,15 +66,20 @@ const EducatorQA = () => {
                     questions.map((q) => (
                         <div key={q._id} className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
                             <div className="flex justify-between items-start mb-4">
-                                <div className="flex items-center gap-3">
-                                    <img src={q.userImage || '/default-avatar.png'} className="w-10 h-10 rounded-full" alt="" />
+                                <div className="flex items-center gap-4">
+                                    {/* course Thumbnail as the primary visual identifier for the instructor */}
+                                    <img
+                                        src={q.courseThumbnail || '/course-placeholder.svg'}
+                                        alt="course"
+                                        className="w-14 h-14 rounded-lg object-cover border border-gray-100 shadow-sm"
+                                        onError={(e) => { e.target.src = '/course-placeholder.svg' }}
+                                    />
                                     <div>
-                                        <p className="font-semibold text-gray-800">{q.userName}</p>
-                                        <p className="text-xs text-gray-500">Course: <span className="text-blue-600">{q.courseTitle}</span></p>
+                                        <p className="font-bold text-xl text-blue-600 leading-tight">{q.courseTitle}</p>
                                     </div>
                                 </div>
-                                <span className={`text-xs px-2 py-1 rounded-full ${q.isResolved ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                                    {q.isResolved ? 'Resolved' : 'Pending'}
+                                <span className={`text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wide ${q.isResolved ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                                    {q.isResolved ? '✓ Resolved' : '● Pending'}
                                 </span>
                             </div>
 

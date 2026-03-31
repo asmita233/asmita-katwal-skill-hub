@@ -1,6 +1,6 @@
 import User from '../models/User.js';
 import { clerkClient } from '@clerk/express';
-// import Course from '../models/Course.js'; // make sure this exists
+import { syncUserFromClerk } from '../utils/userUtils.js';
 
 // Get user data
 export const getUserData = async (req, res) => {
@@ -15,7 +15,13 @@ export const getUserData = async (req, res) => {
             });
         }
 
-        const user = await User.findById(userId);
+        let user = await User.findById(userId);
+
+        // If user not found in DB, try to sync from Clerk
+        if (!user) {
+            console.log('User not found in DB, trying to sync from Clerk:', userId);
+            user = await syncUserFromClerk(userId);
+        }
 
         res.status(200).json({
             success: true,
@@ -42,11 +48,24 @@ export const getEnrolledCourses = async (req, res) => {
             });
         }
 
-        const user = await User.findById(userId).populate('enrolledCourses.courseId');
+        let user = await User.findById(userId).populate('enrolledCourses.courseId');
+
+        if (!user) {
+            console.log('User not found in DB for enrolled courses, syncing from Clerk:', userId);
+            user = await syncUserFromClerk(userId);
+            // Optionally re-populate after sync if needed, but new users won't have enrollments yet anyway
+        }
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found',
+            });
+        }
 
         res.status(200).json({
             success: true,
-            enrolledCourses: user.enrolledCourses,
+            enrolledCourses: user.enrolledCourses || [],
         });
     } catch (error) {
         console.error('Error getting enrolled courses:', error);
@@ -174,7 +193,12 @@ export const removeFromWishlist = async (req, res) => {
 export const getWishlist = async (req, res) => {
     try {
         const userId = req.auth?.userId;
-        const user = await User.findById(userId).populate('wishlist');
+        let user = await User.findById(userId).populate('wishlist');
+
+        if (!user) {
+            console.log('User not found in DB during wishlist fetch, syncing:', userId);
+            user = await syncUserFromClerk(userId);
+        }
 
         if (!user) {
             return res.status(404).json({
@@ -238,11 +262,20 @@ export const becomeEducator = async (req, res) => {
     try {
         const userId = req.auth?.userId;
 
-        const user = await User.findByIdAndUpdate(
+        let user = await User.findByIdAndUpdate(
             userId,
             { role: 'educator' },
             { new: true }
         );
+
+        if (!user) {
+            console.log('User not found in DB during become educator, syncing:', userId);
+            user = await syncUserFromClerk(userId);
+            if (user) {
+                user.role = 'educator';
+                await user.save();
+            }
+        }
 
         if (!user) {
             return res.status(404).json({
@@ -272,8 +305,12 @@ export const purchaseCourse = async (req, res) => {
         const { courseId } = req.body;
         const { origin } = req.headers;
 
-        const userData = await User.findById(userId);
-        // const courseData = await Course.findById(courseId);
+        let userData = await User.findById(userId);
+        
+        if (!userData) {
+            console.log('User not found in DB during purchase check, syncing:', userId);
+            userData = await syncUserFromClerk(userId);
+        }
 
         if (!userData /* || !courseData */) {
             return res.json({

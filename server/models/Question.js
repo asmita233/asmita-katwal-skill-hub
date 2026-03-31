@@ -10,6 +10,10 @@ const questionSchema = new mongoose.Schema({
         type: String,
         default: '',
     },
+    chapterId: {
+        type: String,
+        default: '',
+    },
     userId: {
         type: String, // Clerk user ID
         ref: 'User',

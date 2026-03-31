@@ -14,19 +14,37 @@ const Player = () => {
   const { courseId } = useParams();
 
   // Extract shared state and persistence methods from the context
-  const { navigate, backendUrl, getToken, enrolledCourses, fetchEnrolledCourses, user, isEducator } = useContext(AppContext);
+  const { navigate, backendUrl, getToken, enrolledCourses, fetchEnrolledCourses, user } = useContext(AppContext);
 
   // --- Component State Management ---
   const [courseData, setCourseData] = useState(null); // Full course structure and metadata
   const [currentLecture, setCurrentLecture] = useState(null); // The lecture currently being watched
   const [sidebarOpen, setSidebarOpen] = useState(true); // Toggle for course content sidebar
   const [completedLectures, setCompletedLectures] = useState([]); // List of IDs student has finished
-  const [openChapters, setOpenChapters] = useState({}); // Tracking expanded/collapsed accordion sections
+  const [openSections, setOpenSections] = useState({}); // Tracking expanded/collapsed accordion sections
   const [accessVerified, setAccessVerified] = useState(false); // Whether the user has access to the course
   const [accessLoading, setAccessLoading] = useState(true); // Loading state for access check
 
   // Track if the video should be playing (auto-play when changing lectures)
   const [isPlaying, setIsPlaying] = useState(false);
+  const [certificateLoading, setCertificateLoading] = useState(false);
+
+  const isCourseEducator = Boolean(
+    user && courseData && (courseData.educator?._id === user.id || courseData.educator === user.id)
+  );
+
+  const isEnrolled = Boolean(enrolledCourses?.some((course) => {
+    if (!course || !course.courseId) return false;
+    const enrolledCourseId = course.courseId._id || course.courseId;
+    return enrolledCourseId && enrolledCourseId.toString() === courseId.toString();
+  }));
+
+  // Identify the chapter the current lecture belongs to
+  const currentChapterId = courseData?.courseContent?.find(chapter => 
+    chapter.chapterContent?.some(lecture => lecture.lectureId === currentLecture?.lectureId)
+  )?.chapterId;
+
+  const canTrackProgress = isEnrolled && !isCourseEducator;
 
   // Ref for the native video element
   const videoRef = useRef(null);
@@ -92,7 +110,7 @@ const Player = () => {
         data.course.courseContent?.forEach((chapter) => {
           allOpen[chapter.chapterId] = true;
         });
-        setOpenChapters(allOpen);
+        setOpenSections(allOpen);
       }
     } catch (error) {
       toast.error(error.message);
@@ -100,25 +118,18 @@ const Player = () => {
   }
 
   /**
-   * Verify that the user has access to this course (enrolled or is the educator)
+   * Verify that the user has access to this course:
+   * - The course's own educator can always access (to manage/review their content)
+   * - Students must be enrolled (through enrollment + payment flow)
+   * - Other educators who didn't create this course must also enroll
    */
   const verifyAccess = () => {
     if (!user || !courseData) return;
 
-    // Check if user is the educator
-    const isCourseEducator = courseData.educator?._id === user.id || courseData.educator === user.id;
-
-    // Check if user is enrolled
-    const isEnrolled = enrolledCourses?.some((course) => {
-      if (!course || !course.courseId) return false;
-      const enrolledCourseId = course.courseId._id || course.courseId;
-      return enrolledCourseId && enrolledCourseId.toString() === courseId.toString();
-    });
-
-    if (isCourseEducator || isEnrolled || isEducator) {
+    if (isCourseEducator || isEnrolled) {
       setAccessVerified(true);
     } else {
-      // User has no access - redirect to course page
+      // User has no access - redirect to course page for enrollment
       toast.error('You need to enroll in this course first!');
       navigate(`/course/${courseId}`);
     }
@@ -130,10 +141,27 @@ const Player = () => {
     if (enrolledCourses && enrolledCourses.length > 0) {
       const course = enrolledCourses.find((c) => (c.courseId?._id || c.courseId) === courseId);
       if (course) {
-        setCompletedLectures(course.progress?.completedLectures || []);
+        const newCompleted = course.progress?.completedLectures || [];
+        
+        // If they just hit 100% completion
+        let totalLectures = 0;
+        courseData?.courseContent?.forEach((chapter) => {
+          totalLectures += chapter.chapterContent?.length || 0;
+        });
+
+        if (totalLectures > 0 && 
+            newCompleted.length === totalLectures && 
+            completedLectures.length < totalLectures) {
+          toast.success("Congratulations! You've completed the entire course! 🎉", {
+            position: "top-center",
+            autoClose: 5000
+          });
+        }
+
+        setCompletedLectures(newCompleted);
       }
     }
-  }, [enrolledCourses, courseId]);
+  }, [enrolledCourses, courseId, courseData]);
 
   // Check access once we have both user data, course data, and enrolled courses
   useEffect(() => {
@@ -166,6 +194,15 @@ const Player = () => {
    * Notify backend that a lecture has been completed by the student
    */
   const handleLectureComplete = async (lectureId) => {
+    if (!lectureId) {
+      toast.error('Lecture information is missing.');
+      return;
+    }
+
+    if (!canTrackProgress) {
+      return;
+    }
+
     try {
       const token = await getToken();
       const { data } = await axios.post(backendUrl + '/api/user/update-progress', {
@@ -181,15 +218,15 @@ const Player = () => {
         fetchEnrolledCourses(); // Refresh global context so progress reflects site-wide
       }
     } catch (error) {
-      toast.error(error.message);
+      toast.error(error.response?.data?.message || error.message);
     }
   };
 
-  // Toggle logic for opening/closing chapter accordion sections
-  const toggleChapter = (chapterId) => {
-    setOpenChapters((prev) => ({
+  // Expand/collapse a section's lectures in the sidebar
+  const toggleSection = (sectionId) => {
+    setOpenSections((prev) => ({
       ...prev,
-      [chapterId]: !prev[chapterId],
+      [sectionId]: !prev[sectionId],
     }));
   };
 
@@ -205,6 +242,33 @@ const Player = () => {
     return totalLectures > 0
       ? Math.round((completedLectures.length / totalLectures) * 100)
       : 0;
+  };
+
+  const canClaimCertificate = calculateProgress() === 100 && canTrackProgress;
+
+  const handleGetCertificate = async () => {
+    if (!canClaimCertificate) return;
+
+    try {
+      setCertificateLoading(true);
+      const token = await getToken();
+      const { data } = await axios.post(
+        backendUrl + '/api/certificates/generate',
+        { courseId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (data.success) {
+        toast.success(data.message || 'Certificate ready!');
+        navigate('/certificates');
+      } else {
+        toast.error(data.message || 'Unable to generate certificate');
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || error.message || 'Unable to generate certificate');
+    } finally {
+      setCertificateLoading(false);
+    }
   };
 
   /**
@@ -404,18 +468,21 @@ const Player = () => {
               <h2 className="text-xl font-semibold text-gray-800">
                 {currentLecture?.lectureTitle}
               </h2>
-              {/* Manual "Mark as complete" toggle */}
-              <button
-                onClick={() => handleLectureComplete(currentLecture?.lectureId)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${completedLectures.includes(currentLecture?.lectureId)
-                  ? 'bg-green-100 text-green-700'
-                  : 'bg-blue-600 text-white hover:bg-blue-700'
-                  }`}
-              >
-                {completedLectures.includes(currentLecture?.lectureId)
-                  ? '✓ Completed'
-                  : 'Mark as Complete'}
-              </button>
+              {/* Status Badge - Completion Is Detected Automatically via Video Playback */}
+              {canTrackProgress ? (
+                completedLectures.includes(currentLecture?.lectureId) && (
+                  <span className="px-4 py-2 rounded-lg text-sm font-medium bg-green-100 text-green-700 flex items-center gap-1.5 shadow-sm transition-all animate-fadeIn">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Completed
+                  </span>
+                )
+              ) : (
+                <span className="px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-500">
+                  Creator Access
+                </span>
+              )}
             </div>
 
             <div className="flex items-center gap-4 text-sm text-gray-500">
@@ -441,6 +508,41 @@ const Player = () => {
               )}
             </div>
 
+            {canClaimCertificate && (
+              <div className="mt-8 flex flex-col items-center justify-center gap-4 rounded-2xl border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 to-green-50 p-8 text-center shadow-sm">
+                <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mb-2">
+                   <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                   </svg>
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-emerald-900">Course Completed! 🎉</h2>
+                  <p className="text-emerald-700 mt-1">
+                    Congratulations on finishing all modules. Your certificate of completion is now ready.
+                  </p>
+                </div>
+                <button
+                  onClick={handleGetCertificate}
+                  disabled={certificateLoading}
+                  className="px-10 py-3.5 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-all transform hover:scale-105 active:scale-95 disabled:opacity-60 shadow-lg shadow-emerald-200 flex items-center justify-center gap-3"
+                >
+                  {certificateLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
+                      Generating Certificate...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Claim Your Certificate
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+
             {/* About Course Section */}
             <div className="mt-6 pt-6 border-t border-gray-100">
               <h3 className="font-medium text-gray-800 mb-3">About this course</h3>
@@ -457,6 +559,7 @@ const Player = () => {
               <QASection
                 courseId={courseId}
                 lectureId={currentLecture?.lectureId}
+                chapterId={currentChapterId}
               />
             </div>
           </div>
@@ -479,86 +582,116 @@ const Player = () => {
             </p>
           </div>
 
-          {/* Hierarchy of Chapters and Lectures */}
-          {courseData.courseContent?.map((chapter, chapterIndex) => (
-            <div key={chapter.chapterId} className="border-b border-gray-100">
-              <button
-                onClick={() => toggleChapter(chapter.chapterId)}
-                className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition"
-              >
-                <div className="flex items-center gap-2">
-                  <img
-                    src={assets.down_arrow_icon}
-                    alt="arrow"
-                    className={`w-3 h-3 transition-transform ${openChapters[chapter.chapterId] ? 'rotate-180' : ''
-                      }`}
-                  />
-                  <span className="font-medium text-gray-800 text-sm text-left">
-                    {chapter.chapterTitle}
-                  </span>
-                </div>
-                <span className="text-xs text-gray-500">
-                  {chapter.chapterContent?.length || 0} lectures
-                </span>
-              </button>
+          {/* Hierarchy of Sections and Lectures */}
+          {courseData.courseContent?.map((section, sectionIndex) => {
+            const sectionLectures = section.chapterContent || [];
+            const completedInSection = sectionLectures.filter(l => 
+              completedLectures.includes(l.lectureId)
+            ).length;
+            const isSectionCompleted = sectionLectures.length > 0 && completedInSection === sectionLectures.length;
 
-              {/* Render Lectures for the expanded chapter */}
-              {openChapters[chapter.chapterId] && (
-                <div className="bg-gray-50">
-                  {chapter.chapterContent?.map((lecture, lectureIndex) => {
-                    const isActive =
-                      currentLecture?.lectureId === lecture.lectureId;
-                    const isCompleted = completedLectures.includes(
-                      lecture.lectureId
-                    );
+            return (
+              <div key={section.chapterId} className="border-b border-gray-100">
+                <button
+                  onClick={() => toggleSection(section.chapterId)}
+                  className={`w-full px-4 py-3 flex items-center justify-between transition ${
+                    isSectionCompleted ? 'bg-green-50/30' : 'hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <img
+                      src={assets.down_arrow_icon}
+                      alt="arrow"
+                      className={`w-3 h-3 transition-transform ${openSections[section.chapterId] ? 'rotate-180' : ''
+                        }`}
+                    />
+                    <div className="relative">
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide ${
+                        isSectionCompleted ? 'bg-green-100 text-green-700' : 'bg-blue-50 text-blue-600'
+                      }`}>
+                        S{sectionIndex + 1}
+                      </span>
+                      {isSectionCompleted && (
+                        <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
+                          <svg className="w-1.5 h-1.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    <span className={`font-medium text-sm text-left ${isSectionCompleted ? 'text-green-800' : 'text-gray-800'}`}>
+                      {section.chapterTitle}
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <span className="text-[10px] text-gray-400 font-medium">
+                      {completedInSection}/{sectionLectures.length} done
+                    </span>
+                  </div>
+                </button>
 
-                    return (
-                      <button
-                        key={lecture.lectureId}
-                        onClick={() => setCurrentLecture(lecture)}
-                        className={`w-full px-4 py-3 flex items-center gap-3 text-left transition ${isActive
-                          ? 'bg-blue-50 border-l-2 border-blue-600'
-                          : 'hover:bg-gray-100'
-                          }`}
-                      >
-                        {/* Visual indicator for active and completion states */}
-                        <div
-                          className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${isCompleted
-                            ? 'bg-green-500 text-white'
-                            : isActive
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-gray-200 text-gray-500'
+                {/* Render Lectures for the expanded section */}
+                {openSections[section.chapterId] && (
+                  <div className="bg-gray-50">
+                    {section.chapterContent?.map((lecture, lectureIndex) => {
+                      const isActive =
+                        currentLecture?.lectureId === lecture.lectureId;
+                      const isCompleted = completedLectures.includes(
+                        lecture.lectureId
+                      );
+
+                      return (
+                        <button
+                          key={lecture.lectureId}
+                          onClick={() => setCurrentLecture(lecture)}
+                          className={`w-full px-4 py-3 flex items-center gap-3 text-left transition ${isActive
+                            ? 'bg-blue-50 border-l-2 border-blue-600'
+                            : 'hover:bg-gray-100'
                             }`}
                         >
-                          {isCompleted ? '✓' : lectureIndex + 1}
-                        </div>
-                        <div className="flex-1">
-                          <p
-                            className={`text-sm ${isActive
-                              ? 'text-blue-600 font-medium'
-                              : 'text-gray-700'
+                          {/* Visual indicator for active and completion states */}
+                          <div
+                            className={`w-5 h-5 rounded-full flex items-center justify-center text-xs flex-shrink-0 ${isCompleted
+                              ? 'bg-green-500 text-white shadow-sm'
+                              : isActive
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-gray-200 text-gray-500'
                               }`}
                           >
-                            {lecture.lectureTitle}
-                          </p>
-                          <div className="flex items-center gap-2">
-                            <p className="text-xs text-gray-400">
-                              {lecture.lectureDuration} min
-                            </p>
-                            {lecture.lecturePdf && (
-                              <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-medium">
-                                PDF
-                              </span>
-                            )}
+                            {isCompleted ? (
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                              </svg>
+                            ) : lectureIndex + 1}
                           </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          ))}
+                          <div className="flex-1 min-w-0">
+                            <p
+                              className={`text-sm truncate ${isActive
+                                ? 'text-blue-600 font-medium'
+                                : isCompleted ? 'text-gray-500' : 'text-gray-700'
+                                }`}
+                            >
+                              {lecture.lectureTitle}
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-xs text-gray-400">
+                                {lecture.lectureDuration} min
+                              </p>
+                              {lecture.lecturePdf && (
+                                <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-medium">
+                                  PDF
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
       <Footer />

@@ -3,12 +3,31 @@ import { AppContext } from '../../context/AppContext';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import Footer from '../../components/students/Footer';
-import CourseCard from '../../components/students/CourseCard';
+import { assets } from '../../assets/assets';
 
 const Wishlist = () => {
-    const { backendUrl, getToken, navigate, user } = useContext(AppContext);
+    const { backendUrl, getToken, navigate, user, currency, calculateRating, enrolledCourses } = useContext(AppContext);
     const [wishlist, setWishlist] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [actionLoading, setActionLoading] = useState({});
+
+    const getCoursePrice = (course) => {
+        const discountedPrice = course.coursePrice - (course.discount * course.coursePrice) / 100;
+        return discountedPrice.toFixed(2);
+    };
+
+    const isEnrolled = (courseId) => {
+        return enrolledCourses?.some((enrollment) => {
+            if (!enrollment || !enrollment.courseId) return false;
+            const enrolledCourseId = enrollment.courseId._id || enrollment.courseId;
+            return enrolledCourseId && enrolledCourseId.toString() === courseId.toString();
+        });
+    };
+
+    const handleThumbnailError = (event) => {
+        event.currentTarget.src = '/course-placeholder.svg';
+        event.currentTarget.onerror = null;
+    };
 
     const fetchWishlist = async () => {
         try {
@@ -29,6 +48,7 @@ const Wishlist = () => {
 
     const removeFromWishlist = async (courseId) => {
         try {
+            setActionLoading((prev) => ({ ...prev, [courseId]: true }));
             const token = await getToken();
             const { data } = await axios.delete(backendUrl + `/api/user/wishlist/${courseId}`, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -40,6 +60,40 @@ const Wishlist = () => {
         } catch (error) {
             console.error('Error removing from wishlist:', error);
             toast.error('Failed to remove from wishlist');
+        } finally {
+            setActionLoading((prev) => ({ ...prev, [courseId]: false }));
+        }
+    };
+
+    const enrollNow = async (course) => {
+        if (isEnrolled(course._id)) {
+            navigate(`/player/${course._id}`);
+            return;
+        }
+
+        try {
+            setActionLoading((prev) => ({ ...prev, [course._id]: true }));
+            const token = await getToken();
+            const { data } = await axios.post(
+                backendUrl + '/api/payment/create-checkout-session',
+                { courseId: course._id },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            if (data.success) {
+                if (data.isFree) {
+                    toast.success('Successfully enrolled in free course!');
+                    navigate(`/player/${course._id}`);
+                } else {
+                    window.location.href = data.url;
+                }
+            } else {
+                toast.error(data.message || 'Failed to start checkout');
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to start checkout');
+        } finally {
+            setActionLoading((prev) => ({ ...prev, [course._id]: false }));
         }
     };
 
@@ -89,24 +143,88 @@ const Wishlist = () => {
 
                     {/* Wishlist Grid */}
                     {wishlist.length > 0 ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {wishlist.map((course) => (
-                                <div key={course._id} className="relative group">
-                                    <CourseCard course={course} />
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            removeFromWishlist(course._id);
-                                        }}
-                                        className="absolute top-4 right-4 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
-                                        title="Remove from wishlist"
-                                    >
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-                                        </svg>
-                                    </button>
-                                </div>
-                            ))}
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                            {wishlist.map((course) => {
+                                const rating = calculateRating(course);
+                                const coursePrice = getCoursePrice(course);
+                                const alreadyEnrolled = isEnrolled(course._id);
+
+                                return (
+                                    <div key={course._id} className="bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition-shadow flex flex-col">
+                                        <div className="relative">
+                                            <img
+                                                src={course.courseThumbnail || '/course-placeholder.svg'}
+                                                alt={course.courseTitle}
+                                                className="w-full h-48 object-cover"
+                                                onError={handleThumbnailError}
+                                            />
+                                            {course.discount > 0 && (
+                                                <span className="absolute top-3 left-3 bg-red-500 text-white text-xs font-semibold px-2.5 py-1 rounded-full">
+                                                    {course.discount}% OFF
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <div className="p-5 flex flex-col flex-1">
+                                            <h3 className="text-lg font-semibold text-gray-800 line-clamp-2">
+                                                {course.courseTitle}
+                                            </h3>
+                                            <p className="text-sm text-gray-500 mt-1">Skill Hub</p>
+
+                                            <div className="flex items-center gap-2 mt-3">
+                                                <span className="text-sm font-medium text-yellow-600">{rating || '0.0'}</span>
+                                                <div className="flex">
+                                                    {[...Array(5)].map((_, index) => (
+                                                        <img
+                                                            key={index}
+                                                            src={index < Math.floor(rating) ? assets.star : assets.star_blank}
+                                                            alt="star"
+                                                            className="w-3.5 h-3.5"
+                                                        />
+                                                    ))}
+                                                </div>
+                                                <span className="text-gray-400 text-sm">
+                                                    ({course.courseRatings?.length || 0})
+                                                </span>
+                                            </div>
+
+                                            <div className="flex items-center gap-2 mt-4">
+                                                <p className="text-xl font-bold text-gray-800">
+                                                    {currency}{coursePrice}
+                                                </p>
+                                                {course.discount > 0 && (
+                                                    <p className="text-sm text-gray-400 line-through">
+                                                        {currency}{course.coursePrice}
+                                                    </p>
+                                                )}
+                                            </div>
+
+                                            <div className="flex-1"></div>
+
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-6">
+                                                <button
+                                                    onClick={() => removeFromWishlist(course._id)}
+                                                    disabled={actionLoading[course._id]}
+                                                    className="w-full py-3 rounded-xl border border-red-200 text-red-600 font-semibold hover:bg-red-50 transition disabled:opacity-60"
+                                                >
+                                                    {actionLoading[course._id] ? 'Removing...' : 'Remove from Wishlist'}
+                                                </button>
+                                                <button
+                                                    onClick={() => enrollNow(course)}
+                                                    disabled={actionLoading[course._id]}
+                                                    className={`w-full py-3 rounded-xl font-semibold text-white transition disabled:opacity-60 ${alreadyEnrolled ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'}`}
+                                                >
+                                                    {actionLoading[course._id]
+                                                        ? 'Processing...'
+                                                        : alreadyEnrolled
+                                                            ? 'Continue Learning'
+                                                            : 'Enroll Now'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
                     ) : (
                         <div className="text-center py-16">

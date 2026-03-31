@@ -9,6 +9,11 @@ const EducatorReviews = () => {
     const [loading, setLoading] = useState(true);
     const [selectedCourse, setSelectedCourse] = useState('all');
 
+    const handleThumbnailError = (event) => {
+        event.currentTarget.src = '/course-placeholder.svg';
+        event.currentTarget.onerror = null;
+    };
+
     // Fetch all educator courses (which include courseRatings)
     const fetchCoursesWithReviews = async () => {
         try {
@@ -178,9 +183,10 @@ const EducatorReviews = () => {
                                         }`}
                                 >
                                     <img
-                                        src={course.courseThumbnail}
+                                        src={course.courseThumbnail || '/course-placeholder.svg'}
                                         alt=""
                                         className="w-10 h-10 rounded-lg object-cover"
+                                        onError={handleThumbnailError}
                                     />
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm font-medium text-gray-800 truncate">{course.courseTitle}</p>

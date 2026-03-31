@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { AppContext } from '../../context/AppContext';
 import { assets } from '../../assets/assets';
 import Footer from '../../components/students/Footer';
@@ -10,12 +10,13 @@ import { toast } from 'react-toastify';
 const CourseDetails = () => {
   // Extract unique course ID from URL
   const { id } = useParams();
+  const location = useLocation();
 
   // Access global state and helper methods from AppContext
   const {
     currency,
     calculateRating,
-    calculateChapterTime,
+    calculateSectionTime,
     calculateCourseDuration,
     calculateNoOfLectures,
     navigate,
@@ -41,6 +42,11 @@ const CourseDetails = () => {
   const [reviewText, setReviewText] = useState('');
   const [ratingLoading, setRatingLoading] = useState(false);
   const [hasUserReviewed, setHasUserReviewed] = useState(false);
+
+  const handleThumbnailError = (event) => {
+    event.currentTarget.src = '/course-placeholder.svg';
+    event.currentTarget.onerror = null;
+  };
 
   // Fetch individual course details from the backend
   const fetchCourseData = async () => {
@@ -163,11 +169,28 @@ const CourseDetails = () => {
       fetchEnrolledCourses();
       fetchWishlistStatus();
     }
+  }, [id, user, location.key]);
+
+  useEffect(() => {
+    const handlePageShow = (event) => {
+      if (event.persisted) {
+        fetchCourseData();
+        if (user) {
+          fetchEnrolledCourses();
+          fetchWishlistStatus();
+        }
+      }
+    };
+
+    window.addEventListener('pageshow', handlePageShow);
+    return () => window.removeEventListener('pageshow', handlePageShow);
   }, [id, user]);
 
   const isCourseEducator = user && courseData && (courseData.educator?._id === user.id || courseData.educator === user.id);
-  // Ensure that all educators can view full course content without enrolling
-  const canViewFullCourse = isAlreadyEnrolled || isCourseEducator || isEducator;
+  // Only the course's own educator can view full course content without enrolling.
+  // Students MUST enroll and pay before they can access course content.
+  // Other educators (who didn't create this course) must also enroll as students.
+  const canViewFullCourse = isAlreadyEnrolled || isCourseEducator;
 
   useEffect(() => {
     if (id && enrolledCourses && enrolledCourses.length >= 0) {
@@ -261,6 +284,7 @@ const CourseDetails = () => {
   ).toFixed(2);
 
   const rating = calculateRating(courseData);
+  const averageRating = courseData.averageRating ?? rating;
   const totalLectures = calculateNoOfLectures(courseData);
   const totalDuration = calculateCourseDuration(courseData);
 
@@ -282,19 +306,19 @@ const CourseDetails = () => {
           />
 
           <div className="flex items-center space-x-2 pt-3 pb-1 text-sm">
-            <p className="text-yellow-500">{rating}</p>
+            <p className="text-yellow-500 font-medium">{averageRating.toFixed(1)}</p>
             <div className="flex">
               {[...Array(5)].map((_, i) => (
                 <img
                   key={i}
-                  src={i < Math.floor(rating) ? assets.star : assets.star_blank}
+                  src={i < Math.floor(averageRating) ? assets.star : assets.star_blank}
                   alt="star"
                   className="w-3.5 h-3.5"
                 />
               ))}
             </div>
             <p className="text-blue-600">
-              ({courseData.courseRatings?.length || 0} ratings)
+              ({courseData.courseRatings?.length || 0} reviews)
             </p>
             <p>{courseData.enrolledStudents?.length || 0} students</p>
           </div>
@@ -316,35 +340,37 @@ const CourseDetails = () => {
           </div>
 
           <div className="pt-5">
-            {courseData.courseContent?.map((chapter, index) => (
+            {courseData.courseContent?.map((section, index) => (
               <div
-                key={chapter.chapterId}
+                key={section.chapterId}
                 className="border border-gray-300 bg-white mb-2 rounded"
               >
-                <div
-                  className="flex items-center justify-between px-4 py-3 cursor-pointer select-none"
-                  onClick={() => toggleSection(chapter.chapterId)}
+                <div className="flex items-center justify-between px-4 py-3 cursor-pointer select-none"
+                  onClick={() => toggleSection(section.chapterId)}
                 >
                   <div className="flex items-center gap-2">
                     <img
                       src={assets.down_arrow_icon}
                       alt="arrow"
-                      className={`w-3 h-3 transition-transform ${openSections[chapter.chapterId] ? 'rotate-180' : ''
+                      className={`w-3 h-3 transition-transform ${openSections[section.chapterId] ? 'rotate-180' : ''
                         }`}
                     />
+                    <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+                      Section {index + 1}
+                    </span>
                     <p className="font-medium text-gray-800">
-                      {chapter.chapterTitle}
+                      {section.chapterTitle}
                     </p>
                   </div>
                   <p className="text-sm text-gray-500">
-                    {chapter.chapterContent?.length || 0} lectures •{' '}
-                    {calculateChapterTime(chapter)}
+                    {section.chapterContent?.length || 0} lectures •{' '}
+                    {calculateSectionTime(section)}
                   </p>
                 </div>
 
-                {openSections[chapter.chapterId] && (
+                {openSections[section.chapterId] && (
                   <div className="px-4 pb-4">
-                    {chapter.chapterContent?.map((lecture, lectureIndex) => (
+                    {section.chapterContent?.map((lecture, lectureIndex) => (
                       <div
                         key={lecture.lectureId}
                         className="flex items-center justify-between py-2 border-t border-gray-100"
@@ -352,7 +378,7 @@ const CourseDetails = () => {
                         <div className="flex items-center gap-2">
                           <img
                             src={
-                              canViewFullCourse || lecture.isPreviewFree
+                              canViewFullCourse
                                 ? assets.play_icon
                                 : assets.lesson_icon
                             }
@@ -362,20 +388,45 @@ const CourseDetails = () => {
                           <p className="text-sm text-gray-700">
                             {lecture.lectureTitle}
                           </p>
-                          {(canViewFullCourse || lecture.isPreviewFree) && (
+                          {/* PDF indicator — always visible, download only for enrolled */}
+                          {lecture.lecturePdf && (
+                            canViewFullCourse ? (
+                              <a
+                                href={lecture.lecturePdf}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-red-500 text-xs ml-1 flex items-center gap-1 bg-red-50 px-1.5 py-0.5 rounded font-medium hover:bg-red-100 transition"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                PDF
+                              </a>
+                            ) : (
+                              <span className="text-red-400 text-xs ml-1 bg-red-50 px-1.5 py-0.5 rounded font-medium">
+                                PDF
+                              </span>
+                            )
+                          )}
+                          {canViewFullCourse && (
                             <button
                               className="text-blue-600 text-xs ml-2 cursor-pointer"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (canViewFullCourse) {
-                                  navigate(`/player/${id}`);
-                                } else {
-                                  setPlayerData(lecture);
-                                }
+                                navigate(`/player/${id}`);
                               }}
                             >
-                              {canViewFullCourse ? 'Play' : 'Preview'}
+                              Play
                             </button>
+                          )}
+                          {!canViewFullCourse && (
+                            <span className="text-gray-400 text-xs ml-2 flex items-center gap-1">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                              </svg>
+                              Locked
+                            </span>
                           )}
                         </div>
                         <p className="text-sm text-gray-500">
@@ -402,7 +453,7 @@ const CourseDetails = () => {
 
         {/* Right Column: Floating Pricing and Enrollment Card */}
         <div className="max-w-md z-10 shadow-lg rounded-lg overflow-hidden bg-white border border-gray-100 sticky top-24">
-          {playerData ? (
+          {playerData && canViewFullCourse ? (
             isDirectVideoUrl(playerData.lectureUrl) ? (
               <video
                 controls
@@ -426,11 +477,32 @@ const CourseDetails = () => {
               />
             )
           ) : (
-            <img
-              src={courseData.courseThumbnail}
-              alt={courseData.courseTitle}
-              className="w-full h-48 object-cover"
-            />
+            <div
+              className={`relative group ${canViewFullCourse ? 'cursor-pointer' : 'cursor-default'}`}
+              onClick={() => {
+                if (canViewFullCourse) {
+                  navigate(`/player/${id}`);
+                  scrollTo(0, 0);
+                }
+              }}
+            >
+              <img
+                src={courseData.courseThumbnail || '/course-placeholder.svg'}
+                alt={courseData.courseTitle}
+                className="w-full h-48 object-cover"
+                onError={handleThumbnailError}
+              />
+              {canViewFullCourse && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-colors">
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/95 text-gray-900 px-4 py-2 rounded-full font-semibold shadow-lg flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                    Continue Learning
+                  </div>
+                </div>
+              )}
+            </div>
           )}
 
           <div className="p-5">
@@ -461,14 +533,29 @@ const CourseDetails = () => {
               <span>{courseData.enrolledStudents?.length || 0} Students</span>
             </div>
 
+            {/* Role-based button: Students see Enroll/Payment flow, Educators see View Course */}
             <button
-              onClick={() => canViewFullCourse ? navigate(`/player/${id}`) : handleEnrollNow()}
-              className={`w-full py-3 rounded-lg mt-6 font-medium transition-colors ${canViewFullCourse
+              onClick={() => {
+                if (isAlreadyEnrolled) {
+                  navigate(`/player/${id}`);
+                } else if (isCourseEducator) {
+                  navigate(`/player/${id}`);
+                } else {
+                  handleEnrollNow();
+                }
+              }}
+              className={`w-full py-3 rounded-lg mt-6 font-medium transition-colors ${isAlreadyEnrolled
                 ? 'bg-green-600 hover:bg-green-700 text-white'
-                : 'bg-blue-600 hover:bg-blue-700 text-white'
+                : isCourseEducator
+                  ? 'bg-green-600 hover:bg-green-700 text-white'
+                  : 'bg-blue-600 hover:bg-blue-700 text-white'
                 }`}
             >
-              {isAlreadyEnrolled ? '▶ Continue Learning' : (canViewFullCourse ? '▶ View Course' : 'Enroll Now')}
+              {isAlreadyEnrolled
+                ? '▶ Continue Learning'
+                : isCourseEducator
+                  ? '▶ View Course'
+                  : '🔒 Enroll Now'}
             </button>
 
             {!canViewFullCourse && (
@@ -506,7 +593,7 @@ const CourseDetails = () => {
         <div className="md:px-36 px-8 py-10">
           <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-2xl p-8 border border-blue-100 shadow-sm">
             <h2 className="text-2xl font-semibold text-gray-800 mb-2">
-              {hasUserReviewed ? '✏️ Update Your Review' : '⭐ Rate This Course'}
+              {hasUserReviewed ? '✏️ Update Your Review' : 'Write a Review'}
             </h2>
             <p className="text-gray-500 text-sm mb-6">
               {hasUserReviewed

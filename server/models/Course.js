@@ -5,6 +5,7 @@ const lectureSchema = new mongoose.Schema({
     lectureId: { type: String, required: true },
     lectureOrder: { type: Number, required: true },
     lectureTitle: { type: String, required: true },
+    lectureDescription: { type: String, default: '' }, // Optional description for the lecture
     lectureDuration: { type: Number, default: 0 }, // Length of the video in minutes
     lectureUrl: { type: String, required: true }, // The YouTube or Video link
     lecturePdf: { type: String, default: '' }, // Optional PDF/study material URL (Cloudinary)
@@ -71,9 +72,8 @@ const courseSchema = new mongoose.Schema({
     timestamps: true, // Automatically manages createdAt and updatedAt
 });
 
-// PRE-SAVE MIDDLEWARE:
-// This logic runs every time a course is saved. 
-// It automatically calculates the total duration and lecture count by summing up all the chapters.
+
+// It automatically calculates the total durationand lecture count by summing up all the chapters.
 courseSchema.pre('save', async function () {
     try {
         let totalDuration = 0;
@@ -98,11 +98,22 @@ courseSchema.pre('save', async function () {
     }
 });
 
-// Virtual for average rating
+// Virtual for average rating — must be completely null-safe
+// because this runs during toJSON() serialization on every course document,
+
 courseSchema.virtual('averageRating').get(function () {
-    if (!this.courseRatings || !Array.isArray(this.courseRatings) || this.courseRatings.length === 0) return 0;
-    const sum = this.courseRatings.reduce((acc, r) => acc + r.rating, 0);
-    return Math.round((sum / this.courseRatings.length) * 10) / 10;
+    try {
+        if (!this.courseRatings || !Array.isArray(this.courseRatings) || this.courseRatings.length === 0) {
+            return 0;
+        }
+        const ratings = this.courseRatings.filter(r => r && typeof r.rating === 'number');
+        if (ratings.length === 0) return 0;
+
+        const sum = ratings.reduce((acc, r) => acc + r.rating, 0);
+        return Math.round((sum / ratings.length) * 10) / 10;
+    } catch (error) {
+        return 0;
+    }
 });
 
 // Ensure virtuals are included in JSON

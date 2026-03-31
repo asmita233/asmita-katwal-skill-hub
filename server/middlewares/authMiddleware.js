@@ -1,12 +1,18 @@
 import { clerkClient } from '@clerk/express';
 import User from '../models/User.js';
+import { syncUserFromClerk } from '../utils/userUtils.js';
 
 // Middleware to check if user is an educator
 export const isEducator = async (req, res, next) => {
     try {
         const userId = req.auth.userId;
 
-        const user = await User.findById(userId);
+        let user = await User.findById(userId);
+
+        if (!user) {
+            console.log('User not found in DB in isEducator middleware, syncing:', userId);
+            user = await syncUserFromClerk(userId);
+        }
 
         if (!user || user.role !== 'educator') {
             return res.status(403).json({
@@ -29,7 +35,10 @@ export const isEducator = async (req, res, next) => {
 export const attachUserData = async (req, res, next) => {
     try {
         if (req.auth && req.auth.userId) {
-            const user = await User.findById(req.auth.userId);
+            let user = await User.findById(req.auth.userId);
+            if (!user) {
+                user = await syncUserFromClerk(req.auth.userId);
+            }
             req.user = user;
         }
         next();

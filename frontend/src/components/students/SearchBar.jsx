@@ -1,16 +1,20 @@
-import React, { useState } from 'react'
+import React, { useState, useContext } from 'react'
 import { assets } from '../../assets/assets'
 import { useNavigate } from 'react-router-dom'
+import { useClerk, useUser } from '@clerk/clerk-react'
 
 /**
  * SearchBar Component: Handles user input for finding courses.
  * Logic:
  * - Uses local state 'input' to track typing.
- * - On submission, it pushes the query to the URL via '/course-list/:query'.
- * - This allows users to share direct links to search results.
+ * - On submission, checks if user is logged in first.
+ * - If logged in, pushes the query to the URL via '/course-list/:query'.
+ * - If not logged in, prompts sign-in.
  */
 const SearchBar = ({ data }) => {
   const navigate = useNavigate()
+  const { user } = useUser()
+  const { openSignIn } = useClerk()
 
   // Local state initialized with optional default data (usually from URL params)
   const [input, setInput] = useState(data || '')
@@ -21,6 +25,13 @@ const SearchBar = ({ data }) => {
    */
   const onSearchHandler = (e) => {
     e.preventDefault()
+
+    // Require login before searching courses
+    if (!user) {
+      openSignIn()
+      return
+    }
+
     if (!input.trim()) {
       navigate('/course-list')
       return
@@ -75,4 +86,5 @@ const SearchBar = ({ data }) => {
 }
 
 export default SearchBar
+
 

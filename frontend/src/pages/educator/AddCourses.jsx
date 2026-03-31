@@ -22,22 +22,22 @@ const AddCourses = () => {
   const [thumbnail, setThumbnail] = useState(null);
   const [thumbnailPreview, setThumbnailPreview] = useState(null);
 
-  // --- Course Structured Content State (Chapters & Lectures) ---
-  const [chapters, setChapters] = useState([]);
-  const [showChapterInput, setShowChapterInput] = useState(false);
-  const [newChapterTitle, setNewChapterTitle] = useState('');
+  // --- Course Structured Content State (Sections & Lectures) ---
+  const [sections, setSections] = useState([]);
+  const [showSectionInput, setShowSectionInput] = useState(false);
+  const [newSectionTitle, setNewSectionTitle] = useState('');
 
   // --- UI/Modal States for adding lectures ---
   const [showLectureModal, setShowLectureModal] = useState(false);
-  const [currentChapterId, setCurrentChapterId] = useState(null);
+  const [currentSectionId, setCurrentSectionId] = useState(null);
   const [lectureTitle, setLectureTitle] = useState('');
   const [lectureDuration, setLectureDuration] = useState('');
-  const [lectureUrl, setLectureUrl] = useState('');
   const [lectureVideo, setLectureVideo] = useState(null);
   const [lecturePdf, setLecturePdf] = useState(null);
   const [isPreviewFree, setIsPreviewFree] = useState(false);
   const [isUploadingVideo, setIsUploadingVideo] = useState(false);
   const [isUploadingPdf, setIsUploadingPdf] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   // Global loading state for API requests
   const [loading, setLoading] = useState(false);
@@ -72,39 +72,39 @@ const AddCourses = () => {
     }
   };
 
-  // Logic to add a new chapter to the course content array
-  const addChapter = () => {
-    if (!newChapterTitle.trim()) return;
+  // Logic to add a new section to the course content array
+  const addSection = () => {
+    if (!newSectionTitle.trim()) return;
 
-    const newChapter = {
-      chapterId: uniqid('chapter_'), // Generate unique client-side ID
-      chapterOrder: chapters.length + 1,
-      chapterTitle: newChapterTitle,
+    const newSection = {
+      chapterId: uniqid('section_'), // Generate unique client-side ID
+      chapterOrder: sections.length + 1,
+      chapterTitle: newSectionTitle,
       chapterContent: [],
     };
 
-    setChapters([...chapters, newChapter]);
-    setNewChapterTitle('');
-    setShowChapterInput(false);
+    setSections([...sections, newSection]);
+    setNewSectionTitle('');
+    setShowSectionInput(false);
   };
 
-  // Remove chapter
-  const removeChapter = (chapterId) => {
-    setChapters(chapters.filter((ch) => ch.chapterId !== chapterId));
+  // Remove section
+  const removeSection = (sectionId) => {
+    setSections(sections.filter((ch) => ch.chapterId !== sectionId));
   };
 
   // Open lecture modal
-  const openLectureModal = (chapterId) => {
-    setCurrentChapterId(chapterId);
+  const openLectureModal = (sectionId) => {
+    setCurrentSectionId(sectionId);
     setShowLectureModal(true);
     setLectureTitle('');
     setLectureDuration('');
-    setLectureUrl('');
     setLectureVideo(null);
     setLecturePdf(null);
     setIsPreviewFree(false);
     setIsUploadingVideo(false);
     setIsUploadingPdf(false);
+    setUploadProgress(0);
   };
 
   // Add lecture to chapter
@@ -115,47 +115,45 @@ const AddCourses = () => {
       return;
     }
 
-    if (!lectureUrl.trim() && !lectureVideo) {
-      toast.error('Please provide a video URL or upload a video file');
+    if (!lectureVideo) {
+      toast.error('Please upload a video file');
       return;
     }
 
-    let finalVideoUrl = lectureUrl;
+    let finalVideoUrl = '';
 
-    // If a video file is selected, upload it first
-    if (lectureVideo) {
-      setIsUploadingVideo(true);
-      try {
-        const token = await getToken();
-        const formData = new FormData();
-        formData.append('video', lectureVideo);
+    // Upload video file to Cloudinary
+    setIsUploadingVideo(true);
+    setUploadProgress(0);
+    try {
+      const token = await getToken();
+      const formData = new FormData();
+      formData.append('video', lectureVideo);
 
-        const { data } = await axios.post(`${backendUrl}/api/courses/upload-video`, formData, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data'
-          },
-          // Track upload progress if possible (optional but nice)
-          onUploadProgress: (progressEvent) => {
-            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-            console.log(`Upload progress: ${percentCompleted}%`);
-          }
-        });
-
-        if (data.success) {
-          finalVideoUrl = data.videoUrl;
-          toast.success('Video uploaded successfully');
-        } else {
-          toast.error(data.message || 'Video upload failed');
-          setIsUploadingVideo(false);
-          return;
+      const { data } = await axios.post(`${backendUrl}/api/courses/upload-video`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        },
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          setUploadProgress(percentCompleted);
         }
-      } catch (error) {
-        console.error('Error uploading video:', error);
-        toast.error(error.response?.data?.message || 'Error uploading video');
+      });
+
+      if (data.success) {
+        finalVideoUrl = data.videoUrl;
+        toast.success('Video uploaded successfully');
+      } else {
+        toast.error(data.message || 'Video upload failed');
         setIsUploadingVideo(false);
         return;
       }
+    } catch (error) {
+      console.error('Error uploading video:', error);
+      toast.error(error.response?.data?.message || 'Error uploading video');
+      setIsUploadingVideo(false);
+      return;
     }
 
     // --- PDF Upload Logic ---
@@ -191,45 +189,46 @@ const AddCourses = () => {
     }
 
 
-    const updatedChapters = chapters.map((chapter) => {
-      if (chapter.chapterId === currentChapterId) {
+    const updatedSections = sections.map((section) => {
+      if (section.chapterId === currentSectionId) {
         const newLecture = {
           lectureId: uniqid('lecture_'),
-          lectureOrder: chapter.chapterContent.length + 1,
+          lectureOrder: section.chapterContent.length + 1,
           lectureTitle,
+          lectureDescription: '',
           lectureDuration: parseInt(lectureDuration) || 0,
           lectureUrl: finalVideoUrl,
           lecturePdf: finalPdfUrl,
           isPreviewFree,
         };
         return {
-          ...chapter,
-          chapterContent: [...chapter.chapterContent, newLecture],
+          ...section,
+          chapterContent: [...section.chapterContent, newLecture],
         };
       }
-      return chapter;
+      return section;
     });
 
-    setChapters(updatedChapters);
+    setSections(updatedSections);
     setIsUploadingVideo(false);
     setIsUploadingPdf(false);
     setShowLectureModal(false);
   };
 
   // Remove lecture
-  const removeLecture = (chapterId, lectureId) => {
-    const updatedChapters = chapters.map((chapter) => {
-      if (chapter.chapterId === chapterId) {
+  const removeLecture = (sectionId, lectureId) => {
+    const updatedSections = sections.map((section) => {
+      if (section.chapterId === sectionId) {
         return {
-          ...chapter,
-          chapterContent: chapter.chapterContent.filter(
+          ...section,
+          chapterContent: section.chapterContent.filter(
             (lec) => lec.lectureId !== lectureId
           ),
         };
       }
-      return chapter;
+      return section;
     });
-    setChapters(updatedChapters);
+    setSections(updatedSections);
   };
 
   // --- Final Form Submission ---
@@ -258,7 +257,7 @@ const AddCourses = () => {
         discount: parseFloat(discount),
         category,
         level,
-        courseContent: chapters,
+        courseContent: sections,
       };
 
       // Step 1: Initial Course Creation
@@ -440,74 +439,83 @@ const AddCourses = () => {
           </div>
         </div>
 
-        {/* Course Content - Chapters */}
+        {/* Course Content - Sections */}
         <div className="border border-gray-200 rounded-lg p-4">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-medium text-gray-800">Course Content</h2>
+            <div>
+              <h2 className="text-lg font-medium text-gray-800">Course Content</h2>
+              <p className="text-xs text-gray-400 mt-1">Organize your lectures into topic-based sections (e.g., Props in React, State Management, API Integration)</p>
+            </div>
             <button
               type="button"
-              onClick={() => setShowChapterInput(true)}
-              className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+              onClick={() => setShowSectionInput(true)}
+              className="text-blue-600 hover:text-blue-700 text-sm font-medium whitespace-nowrap"
             >
-              + Add Chapter
+              + Add Section
             </button>
           </div>
 
-          {/* Add Chapter Input */}
-          {showChapterInput && (
-            <div className="flex items-center gap-2 mb-4 p-3 bg-gray-50 rounded-lg">
-              <input
-                type="text"
-                value={newChapterTitle}
-                onChange={(e) => setNewChapterTitle(e.target.value)}
-                placeholder="Enter chapter title"
-                className="flex-1 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
-              />
+          {/* Add Section Input */}
+          {showSectionInput && (
+            <div className="flex items-center gap-2 mb-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+              <div className="flex-1">
+                <input
+                  type="text"
+                  value={newSectionTitle}
+                  onChange={(e) => setNewSectionTitle(e.target.value)}
+                  placeholder='e.g., "Props in React" or "State Management" or "API Integration"'
+                  className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                />
+                <p className="text-xs text-gray-400 mt-1 ml-1">Give a topic name — students will see this as a section header</p>
+              </div>
               <button
                 type="button"
-                onClick={addChapter}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                onClick={addSection}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
               >
                 Add
               </button>
               <button
                 type="button"
-                onClick={() => setShowChapterInput(false)}
-                className="px-4 py-2 text-gray-500 hover:text-gray-700"
+                onClick={() => setShowSectionInput(false)}
+                className="px-4 py-2 text-gray-500 hover:text-gray-700 text-sm"
               >
                 Cancel
               </button>
             </div>
           )}
 
-          {/* Chapters List */}
+          {/* Sections List */}
           <div className="space-y-3">
-            {chapters.map((chapter, chapterIndex) => (
+            {sections.map((section, sectionIndex) => (
               <div
-                key={chapter.chapterId}
+                key={section.chapterId}
                 className="border border-gray-200 rounded-lg overflow-hidden"
               >
-                {/* Chapter Header */}
+                {/* Section Header */}
                 <div className="flex items-center justify-between px-4 py-3 bg-gray-50">
                   <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+                      Section {sectionIndex + 1}
+                    </span>
                     <span className="text-sm font-medium text-gray-800">
-                      {chapterIndex + 1}. {chapter.chapterTitle}
+                      {section.chapterTitle}
                     </span>
                     <span className="text-xs text-gray-500">
-                      ({chapter.chapterContent.length} lectures)
+                      ({section.chapterContent.length} {section.chapterContent.length === 1 ? 'lecture' : 'lectures'})
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => openLectureModal(chapter.chapterId)}
+                      onClick={() => openLectureModal(section.chapterId)}
                       className="text-blue-600 hover:text-blue-700 text-sm"
                     >
                       + Add Lecture
                     </button>
                     <button
                       type="button"
-                      onClick={() => removeChapter(chapter.chapterId)}
+                      onClick={() => removeSection(section.chapterId)}
                       className="text-red-500 hover:text-red-600 text-sm"
                     >
                       Delete
@@ -516,9 +524,9 @@ const AddCourses = () => {
                 </div>
 
                 {/* Lectures */}
-                {chapter.chapterContent.length > 0 && (
+                {section.chapterContent.length > 0 && (
                   <div className="px-4 py-2 space-y-2">
-                    {chapter.chapterContent.map((lecture, lectureIndex) => (
+                    {section.chapterContent.map((lecture, lectureIndex) => (
                       <div
                         key={lecture.lectureId}
                         className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0"
@@ -545,7 +553,7 @@ const AddCourses = () => {
                           <button
                             type="button"
                             onClick={() =>
-                              removeLecture(chapter.chapterId, lecture.lectureId)
+                              removeLecture(section.chapterId, lecture.lectureId)
                             }
                             className="text-red-500 hover:text-red-600"
                           >
@@ -564,10 +572,14 @@ const AddCourses = () => {
             ))}
           </div>
 
-          {chapters.length === 0 && !showChapterInput && (
-            <p className="text-center text-gray-500 py-8">
-              No chapters added yet. Click "Add Chapter" to start.
-            </p>
+          {sections.length === 0 && !showSectionInput && (
+            <div className="text-center py-10">
+              <div className="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                <svg className="w-7 h-7 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+              </div>
+              <p className="text-gray-600 font-medium mb-1">No sections added yet</p>
+              <p className="text-gray-400 text-sm">Click "+ Add Section" to create topic-based sections like<br/>"Props in React", "useState", "API Integration"</p>
+            </div>
           )}
         </div>
 
@@ -656,66 +668,74 @@ const AddCourses = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Video Option
+                  Upload Video <span className="text-red-500">*</span>
                 </label>
-                <div className="space-y-3">
-                  {/* URL Option */}
-                  <div>
-                    <span className="text-xs text-gray-500 block mb-1">Option 1: Video URL (YouTube)</span>
+                <div className="flex items-center gap-2">
+                  <label className={`flex-1 flex flex-col items-center justify-center gap-2 px-4 py-5 border-2 border-dashed rounded-lg cursor-pointer transition ${lectureVideo ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-blue-500'} ${isUploadingVideo ? 'opacity-50 cursor-not-allowed' : ''}`}>
                     <input
-                      type="url"
-                      value={lectureUrl}
+                      type="file"
+                      accept="video/mp4,video/webm,video/ogg,video/*"
+                      className="hidden"
                       onChange={(e) => {
-                        setLectureUrl(e.target.value);
-                        if (e.target.value) setLectureVideo(null);
+                        const file = e.target.files[0];
+                        if (file) {
+                          if (!file.type.startsWith('video/')) {
+                            toast.error('Please select a valid video file');
+                            return;
+                          }
+                          if (file.size > 500 * 1024 * 1024) {
+                            toast.error('Video must be less than 500MB');
+                            return;
+                          }
+                          setLectureVideo(file);
+                        }
                       }}
-                      placeholder="https://youtu.be/..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
-                      disabled={isUploadingVideo || !!lectureVideo}
+                      disabled={isUploadingVideo}
                     />
-                  </div>
+                    {lectureVideo ? (
+                      <>
+                        <svg className="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        <span className="text-sm font-medium text-blue-700 truncate max-w-[250px]">{lectureVideo.name}</span>
+                        <span className="text-xs text-blue-500">{(lectureVideo.size / (1024 * 1024)).toFixed(1)} MB</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <span className="text-sm text-gray-500">Drop video or <span className="text-blue-600 font-medium">browse</span></span>
+                        <span className="text-xs text-gray-400">MP4, WebM • Max 500MB</span>
+                      </>
+                    )}
+                  </label>
+                  {lectureVideo && !isUploadingVideo && (
+                    <button
+                      type="button"
+                      onClick={() => setLectureVideo(null)}
+                      className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
+                    >
+                      <img src={assets.cross_icon} alt="" className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
 
-                  {/* Divider */}
-                  <div className="flex items-center gap-2">
-                    <hr className="flex-1 border-gray-200" />
-                    <span className="text-[10px] text-gray-400 font-bold">OR</span>
-                    <hr className="flex-1 border-gray-200" />
-                  </div>
-
-                  {/* File Upload Option */}
-                  <div>
-                    <span className="text-xs text-gray-500 block mb-1">Option 2: Upload Video File</span>
-                    <div className="flex items-center gap-2">
-                      <label className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 border-2 border-dashed rounded-lg cursor-pointer transition ${lectureVideo ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-blue-500'} ${isUploadingVideo ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                        <input
-                          type="file"
-                          accept="video/*"
-                          className="hidden"
-                          onChange={(e) => {
-                            if (e.target.files[0]) {
-                              setLectureVideo(e.target.files[0]);
-                              setLectureUrl('');
-                            }
-                          }}
-                          disabled={isUploadingVideo}
-                        />
-                        <img src={assets.file_upload_icon} alt="" className="w-4 h-4 opacity-70" />
-                        <span className="text-sm text-gray-600 truncate">
-                          {lectureVideo ? lectureVideo.name : 'Select Video File'}
-                        </span>
-                      </label>
-                      {lectureVideo && !isUploadingVideo && (
-                        <button
-                          type="button"
-                          onClick={() => setLectureVideo(null)}
-                          className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
-                        >
-                          <img src={assets.cross_icon} alt="" className="w-3 h-3" />
-                        </button>
-                      )}
+                {/* Upload Progress Bar */}
+                {isUploadingVideo && (
+                  <div className="mt-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-medium text-blue-600">Uploading video...</span>
+                      <span className="text-xs font-bold text-blue-600">{uploadProgress}%</span>
+                    </div>
+                    <div className="w-full h-2 bg-blue-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-300"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
                     </div>
                   </div>
-                </div>
+                )}
               </div>
 
               <div className="flex items-center gap-2">

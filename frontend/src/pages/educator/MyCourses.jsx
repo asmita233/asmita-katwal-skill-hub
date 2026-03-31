@@ -41,6 +41,11 @@ const MyCourses = () => {
     setShowDeleteModal(true);
   };
 
+  const handleThumbnailError = (event) => {
+    event.currentTarget.src = '/course-placeholder.svg';
+    event.currentTarget.onerror = null;
+  };
+
   const handleDeleteCourse = async () => {
     if (!courseToDelete) return;
     setDeletingId(courseToDelete._id);
@@ -112,9 +117,10 @@ const MyCourses = () => {
             >
               {/* Thumbnail */}
               <img
-                src={course.courseThumbnail || '/placeholder.png'}
+                src={course.courseThumbnail || '/course-placeholder.svg'}
                 alt={course.courseTitle}
                 className="w-28 h-20 object-cover rounded-lg bg-gray-100 flex-shrink-0"
+                onError={handleThumbnailError}
               />
 
               {/* Course Info */}
@@ -128,6 +134,10 @@ const MyCourses = () => {
                   <span>{course.level}</span>
                   <span>•</span>
                   <span>{course.enrolledStudents?.length || 0} students</span>
+                  <span>•</span>
+                  <span>{course.courseContent?.length || 0} sections</span>
+                  <span>•</span>
+                  <span>{course.courseContent?.reduce((acc, ch) => acc + (ch.chapterContent?.length || 0), 0) || 0} lectures</span>
                 </div>
                 <div className="flex items-center gap-2 mt-1">
                   {course.discount > 0 && (
@@ -162,6 +172,31 @@ const MyCourses = () => {
 
               {/* Actions */}
               <div className="flex items-center gap-2 flex-shrink-0">
+                <button
+                  onClick={async () => {
+                    try {
+                      const token = await getToken();
+                      const { data } = await axios.patch(`${backendUrl}/api/courses/${course._id}/publish`, {}, {
+                        headers: { Authorization: `Bearer ${token}` }
+                      });
+                      if (data.success) {
+                        toast.success(data.message);
+                        setCourses(courses.map(c => c._id === course._id ? { ...c, isPublished: data.isPublished } : c));
+                      }
+                    } catch (error) {
+                      toast.error("Failed to update status");
+                    }
+                  }}
+                  className={`px-3 py-1.5 text-sm rounded-lg border transition ${course.isPublished ? 'text-orange-600 border-orange-200 hover:bg-orange-50' : 'text-green-600 border-green-200 hover:bg-green-50'}`}
+                >
+                  {course.isPublished ? 'Unpublish' : 'Publish'}
+                </button>
+                <button
+                  onClick={() => navigate(`/educator/edit-course/${course._id}`)}
+                  className="px-3 py-1.5 text-sm text-purple-600 border border-purple-200 rounded-lg hover:bg-purple-50 transition font-medium"
+                >
+                  Edit Content
+                </button>
                 <button
                   onClick={() => navigate(`/course/${course._id}`)}
                   className="px-3 py-1.5 text-sm text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition"

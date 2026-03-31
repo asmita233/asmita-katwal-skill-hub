@@ -2,6 +2,7 @@ import Certificate from '../models/Certificate.js';
 import Course from '../models/Course.js';
 import User from '../models/User.js';
 import { v4 as uuidv4 } from 'uuid';
+import { syncUserFromClerk } from '../utils/userUtils.js';
 
 // Generate certificate for a completed course
 export const generateCertificate = async (req, res) => {
@@ -10,7 +11,12 @@ export const generateCertificate = async (req, res) => {
         const { courseId } = req.body;
 
         // Get user
-        const user = await User.findById(userId);
+        let user = await User.findById(userId);
+        if (!user) {
+            console.log('User not found in DB during certificate generation, syncing from Clerk:', userId);
+            user = await syncUserFromClerk(userId);
+        }
+
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -50,11 +56,11 @@ export const generateCertificate = async (req, res) => {
             ? Math.round((completedLectures / totalLectures) * 100)
             : 0;
 
-        // Check if course is completed (at least 80%)
-        if (completionPercentage < 80) {
+        // Check if course is completed (100%)
+        if (completionPercentage < 100) {
             return res.status(400).json({
                 success: false,
-                message: `Course completion is ${completionPercentage}%. You need at least 80% to get a certificate.`,
+                message: `Course completion is ${completionPercentage}%. You need 100% to get a certificate.`,
                 completionPercentage,
             });
         }
@@ -104,6 +110,13 @@ export const getUserCertificates = async (req, res) => {
     try {
         const userId = req.auth?.userId;
 
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'Unauthorized',
+            });
+        }
+
         const certificates = await Certificate.find({ userId })
             .populate('courseId', 'courseTitle courseThumbnail')
             .sort({ completionDate: -1 });
@@ -114,13 +127,9 @@ export const getUserCertificates = async (req, res) => {
         });
     } catch (error) {
         console.error('Error getting certificates:', error);
-        // Emergency log for debugging
-        import('fs').then(fs => {
-            fs.appendFileSync('error.log', `[${new Date().toISOString()}] Certificate Load Error: ${error.message}\n${error.stack}\n`);
-        });
         res.status(500).json({
             success: false,
-            message: error.message,
+            message: 'Failed to load certificates. Please try again.',
         });
     }
 };
@@ -197,7 +206,12 @@ export const checkCertificateEligibility = async (req, res) => {
         const { courseId } = req.params;
 
         // Get user
-        const user = await User.findById(userId);
+        let user = await User.findById(userId);
+        if (!user) {
+            console.log('User not found in DB during eligibility check, syncing from Clerk:', userId);
+            user = await syncUserFromClerk(userId);
+        }
+
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -244,11 +258,11 @@ export const checkCertificateEligibility = async (req, res) => {
 
         res.status(200).json({
             success: true,
-            eligible: completionPercentage >= 80,
+            eligible: completionPercentage >= 100,
             alreadyHasCertificate: !!existingCertificate,
             certificate: existingCertificate,
             completionPercentage,
-            requiredPercentage: 80,
+            requiredPercentage: 100,
         });
     } catch (error) {
         console.error('Error checking eligibility:', error);

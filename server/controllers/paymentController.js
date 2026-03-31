@@ -2,7 +2,9 @@ import Stripe from 'stripe';
 import Course from '../models/Course.js';
 import User from '../models/User.js';
 import Purchase from '../models/Purchase.js';
+import Enrollment from '../models/Enrollment.js';
 import { sendEnrollmentEmail, sendPaymentSuccessEmail } from '../utils/emailService.js';
+import { syncUserFromClerk } from '../utils/userUtils.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -14,7 +16,13 @@ export const createCheckoutSession = async (req, res) => {
         const { courseId } = req.body;
 
         // Verify that the user exists in our database
-        const user = await User.findById(userId);
+        let user = await User.findById(userId);
+        
+        if (!user) {
+            console.log('User not found in DB during payment, syncing from Clerk:', userId);
+            user = await syncUserFromClerk(userId);
+        }
+
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
@@ -78,6 +86,9 @@ export const createCheckoutSession = async (req, res) => {
             success_url: `${process.env.FRONTEND_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${process.env.FRONTEND_URL}/course/${courseId}`,
             customer_email: user.email,
+            payment_intent_data: {
+                metadata: { courseId: courseId, userId: userId },
+            },
             // Metadata is hidden data we pass to Stripe so we can identify the purchase in our webhook later.
             metadata: { courseId: courseId, userId: userId },
         });
@@ -191,6 +202,48 @@ export const stripeWebhook = async (req, res) => {
 
     // Process specific events sent by Stripe
     switch (event.type) {
+        case 'payment_intent.succeeded': {
+            const paymentIntent = event.data.object;
+            const { courseId, userId } = paymentIntent.metadata || {};
+
+            if (courseId && userId) {
+                await Enrollment.findOneAndUpdate(
+                    { userId, courseId },
+                    {
+                        userId,
+                        courseId,
+                        status: 'active',
+                        enrolledAt: new Date(),
+                    },
+                    { upsert: true, new: true, setDefaultsOnInsert: true }
+                );
+            }
+
+            console.log('Payment succeeded, enrollment marked active.');
+            break;
+        }
+
+        case 'payment_intent.payment_failed': {
+            const paymentIntent = event.data.object;
+            const { courseId, userId } = paymentIntent.metadata || {};
+
+            if (courseId && userId) {
+                await Enrollment.findOneAndUpdate(
+                    { userId, courseId },
+                    {
+                        userId,
+                        courseId,
+                        status: 'failed',
+                        enrolledAt: new Date(),
+                    },
+                    { upsert: true, new: true, setDefaultsOnInsert: true }
+                );
+            }
+
+            console.log('Payment failed, enrollment marked failed.');
+            break;
+        }
+
         case 'checkout.session.completed': {
             const session = event.data.object;
             const { courseId, userId } = session.metadata; // Retrieve our hidden data
@@ -224,12 +277,19 @@ export const stripeWebhook = async (req, res) => {
                     await user.save();
                 }
             }
+
+            await Enrollment.findOneAndUpdate(
+                { userId, courseId },
+                {
+                    userId,
+                    courseId,
+                    status: 'active',
+                    enrolledAt: new Date(),
+                },
+                { upsert: true, new: true, setDefaultsOnInsert: true }
+            );
             break;
         }
-
-        case 'payment_intent.payment_failed':
-            console.log('Payment failed, no enrollment granted.');
-            break;
 
         default:
             console.log(`Unhandled event type ${event.type}`);

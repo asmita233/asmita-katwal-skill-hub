@@ -31,9 +31,9 @@ const CourseList = () => {
       // Text search filter
       if (input) {
         tempCourses = tempCourses.filter((item) =>
-          item.courseTitle.toLowerCase().includes(input.toLowerCase()) ||
-          item.courseDescription?.toLowerCase().includes(input.toLowerCase()) ||
-          item.category?.toLowerCase().includes(input.toLowerCase())
+          (item.courseTitle || '').toLowerCase().includes(input.toLowerCase()) ||
+          (item.courseDescription || '').toLowerCase().includes(input.toLowerCase()) ||
+          (item.category || '').toLowerCase().includes(input.toLowerCase())
         );
       }
 

@@ -3,6 +3,7 @@ import { requireAuth } from '@clerk/express';
 import {
     getCourseQuestions,
     getLectureQuestions,
+    getChapterQuestions,
     askQuestion,
     answerQuestion,
     resolveQuestion,
@@ -15,6 +16,7 @@ const router = express.Router();
 // Public routes
 router.get('/course/:courseId', getCourseQuestions);
 router.get('/course/:courseId/lecture/:lectureId', getLectureQuestions);
+router.get('/course/:courseId/chapter/:chapterId', getChapterQuestions);
 
 // Protected routes
 router.post('/', requireAuth(), askQuestion);

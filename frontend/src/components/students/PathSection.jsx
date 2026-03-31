@@ -18,7 +18,7 @@ const PathSection = () => {
                     <div
                         onClick={() => {
                             if (user) {
-                                navigate('/course-list');
+                                navigate('/dashboard');
                             } else {
                                 sessionStorage.setItem('preferredRole', 'student');
                                 openSignUp();
@@ -36,7 +36,7 @@ const PathSection = () => {
                             Access 10,000+ courses from world-class instructors. Learn at your own pace.
                         </p>
                         <div className="flex items-center text-blue-600 font-semibold group-hover:gap-3 transition-all">
-                            <span>{user ? 'Explore Courses' : 'Create Student Account'}</span>
+                            <span>{user ? 'Go to Dashboard' : 'Create Student Account'}</span>
                             <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
                             </svg>

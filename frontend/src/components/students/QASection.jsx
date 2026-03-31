@@ -3,7 +3,7 @@ import { AppContext } from '../../context/AppContext';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
-const QASection = ({ courseId, lectureId }) => {
+const QASection = ({ courseId, lectureId, chapterId }) => {
     // Shared authentication context
     const { backendUrl, getToken, user } = useContext(AppContext);
 
@@ -21,9 +21,14 @@ const QASection = ({ courseId, lectureId }) => {
      */
     const fetchQuestions = async () => {
         try {
-            const url = lectureId
-                ? `${backendUrl}/api/questions/course/${courseId}/lecture/${lectureId}`
-                : `${backendUrl}/api/questions/course/${courseId}`;
+            let url = `${backendUrl}/api/questions/course/${courseId}`;
+            
+            if (chapterId) {
+                url = `${backendUrl}/api/questions/course/${courseId}/chapter/${chapterId}`;
+            } else if (lectureId) {
+                url = `${backendUrl}/api/questions/course/${courseId}/lecture/${lectureId}`;
+            }
+            
             const { data } = await axios.get(url);
             if (data.success) {
                 setQuestions(data.questions);
@@ -35,10 +40,10 @@ const QASection = ({ courseId, lectureId }) => {
         }
     };
 
-    // Refetch when the student navigates to a different lecture in the player
+    // Refetch when the student navigates to a different lecture or chapter in the player
     useEffect(() => {
         fetchQuestions();
-    }, [courseId, lectureId]);
+    }, [courseId, lectureId, chapterId]);
 
     /**
      * POST a new question thread to the database
@@ -52,7 +57,7 @@ const QASection = ({ courseId, lectureId }) => {
             const token = await getToken();
             const { data } = await axios.post(
                 `${backendUrl}/api/questions`,
-                { courseId, lectureId, question: newQuestion },
+                { courseId, lectureId, chapterId, question: newQuestion },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             if (data.success) {
@@ -124,11 +129,19 @@ const QASection = ({ courseId, lectureId }) => {
 
     return (
         <div className="bg-white rounded-lg p-6 shadow-sm">
-            <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                Q&A Discussion ({questions.length})
+            <h3 className="font-semibold text-gray-800 mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span>Q&A Discussion</span>
+                    <span className="text-xs font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded ml-1">
+                        {chapterId ? 'Section Wise' : 'Topic Wide'}
+                    </span>
+                </div>
+                <span className="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                    {questions.length} questions
+                </span>
             </h3>
 
             {/* --- Ask New Question Section (Authenticated Only) --- */}

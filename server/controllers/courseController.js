@@ -3,6 +3,7 @@ import User from '../models/User.js';
 import { v2 as cloudinary } from 'cloudinary';
 import Purchase from '../models/Purchase.js';
 import fs from 'fs';
+import { syncUserFromClerk } from '../utils/userUtils.js';
 
 // Get all courses (public)
 export const getAllCourses = async (req, res) => {
@@ -19,8 +20,9 @@ export const getAllCourses = async (req, res) => {
             limit = 12
         } = req.query;
 
+       
         // Build query
-        const query = { isPublished: true };
+        const query = {};
 
         if (search) {
             query.$or = [
@@ -142,16 +144,12 @@ export const createCourse = async (req, res) => {
         // Check if user exists in database, if not create them
         let existingUser = await User.findById(userId);
         if (!existingUser) {
-            console.log('User not found in DB, creating from Clerk ID...');
-            // Create a basic user record - they can update profile later
-            existingUser = new User({
-                _id: userId,
-                name: 'Educator',
-                email: `${userId}@placeholder.com`,
-                role: 'educator',
-            });
-            await existingUser.save();
-            console.log('Created new user in DB:', userId);
+            console.log('User not found in DB during course creation, syncing from Clerk:', userId);
+            existingUser = await syncUserFromClerk(userId);
+        }
+        
+        if (!existingUser) {
+            return res.status(404).json({ success: false, message: 'User not found' });
         }
 
         // Create course
@@ -164,7 +162,7 @@ export const createCourse = async (req, res) => {
             level: level || 'All Levels',
             courseContent: courseContent || [],
             educator: userId,
-            isPublished: false,
+            isPublished: true,
         });
 
         console.log('Attempting to save course:', course.courseTitle);
@@ -464,7 +462,7 @@ export const addRating = async (req, res) => {
         if (!course.enrolledStudents.includes(userId)) {
             return res.status(403).json({
                 success: false,
-                message: 'You must be enrolled to rate this course',
+                message: 'Only enrolled students can review this course',
             });
         }
 
@@ -607,6 +605,215 @@ export const getEnrolledStudents = async (req, res) => {
             success: false,
             message: error.message,
         });
+    }
+};
+
+// ============================================================
+// COURSE CONTENT MANAGEMENT (Sections & Lectures)
+// ============================================================
+
+// Update entire course content (sections + lectures)
+export const updateCourseContent = async (req, res) => {
+    try {
+        const userId = req.auth?.userId;
+        const { id } = req.params;
+        const { courseContent } = req.body;
+
+        const course = await Course.findById(id);
+
+        if (!course) {
+            return res.status(404).json({ success: false, message: 'Course not found' });
+        }
+
+        if (course.educator !== userId) {
+            return res.status(403).json({ success: false, message: 'Not authorized to edit this course' });
+        }
+
+        if (!Array.isArray(courseContent)) {
+            return res.status(400).json({ success: false, message: 'courseContent must be an array' });
+        }
+
+        course.courseContent = courseContent;
+        await course.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Course content updated successfully',
+            course,
+        });
+    } catch (error) {
+        console.error('Error updating course content:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// Reorder sections and lectures (drag and drop)
+export const reorderContent = async (req, res) => {
+    try {
+        const userId = req.auth?.userId;
+        const { id } = req.params;
+        const { courseContent } = req.body;
+
+        const course = await Course.findById(id);
+
+        if (!course) {
+            return res.status(404).json({ success: false, message: 'Course not found' });
+        }
+
+        if (course.educator !== userId) {
+            return res.status(403).json({ success: false, message: 'Not authorized' });
+        }
+
+        // Update order values
+        courseContent.forEach((section, sIdx) => {
+            section.chapterOrder = sIdx + 1;
+            if (section.chapterContent) {
+                section.chapterContent.forEach((lecture, lIdx) => {
+                    lecture.lectureOrder = lIdx + 1;
+                });
+            }
+        });
+
+        course.courseContent = courseContent;
+        await course.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Content reordered successfully',
+            course,
+        });
+    } catch (error) {
+        console.error('Error reordering content:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// Delete a section
+export const deleteSection = async (req, res) => {
+    try {
+        const userId = req.auth?.userId;
+        const { id, sectionId } = req.params;
+
+        const course = await Course.findById(id);
+        if (!course) return res.status(404).json({ success: false, message: 'Course not found' });
+        if (course.educator !== userId) return res.status(403).json({ success: false, message: 'Not authorized' });
+
+        course.courseContent = course.courseContent.filter(ch => ch.chapterId !== sectionId);
+
+        // Re-order remaining sections
+        course.courseContent.forEach((ch, idx) => {
+            ch.chapterOrder = idx + 1;
+        });
+
+        await course.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Section deleted successfully',
+            course,
+        });
+    } catch (error) {
+        console.error('Error deleting section:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// Delete a lecture from a section
+export const deleteLecture = async (req, res) => {
+    try {
+        const userId = req.auth?.userId;
+        const { id, sectionId, lectureId } = req.params;
+
+        const course = await Course.findById(id);
+        if (!course) return res.status(404).json({ success: false, message: 'Course not found' });
+        if (course.educator !== userId) return res.status(403).json({ success: false, message: 'Not authorized' });
+
+        const section = course.courseContent.find(ch => ch.chapterId === sectionId);
+        if (!section) return res.status(404).json({ success: false, message: 'Section not found' });
+
+        section.chapterContent = section.chapterContent.filter(lec => lec.lectureId !== lectureId);
+
+        // Re-order remaining lectures
+        section.chapterContent.forEach((lec, idx) => {
+            lec.lectureOrder = idx + 1;
+        });
+
+        await course.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Lecture deleted successfully',
+            course,
+        });
+    } catch (error) {
+        console.error('Error deleting lecture:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// Update a section title
+export const updateSection = async (req, res) => {
+    try {
+        const userId = req.auth?.userId;
+        const { id, sectionId } = req.params;
+        const { chapterTitle } = req.body;
+
+        const course = await Course.findById(id);
+        if (!course) return res.status(404).json({ success: false, message: 'Course not found' });
+        if (course.educator !== userId) return res.status(403).json({ success: false, message: 'Not authorized' });
+
+        const section = course.courseContent.find(ch => ch.chapterId === sectionId);
+        if (!section) return res.status(404).json({ success: false, message: 'Section not found' });
+
+        if (chapterTitle) section.chapterTitle = chapterTitle;
+        await course.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Section updated successfully',
+            course,
+        });
+    } catch (error) {
+        console.error('Error updating section:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// Update a lecture
+export const updateLecture = async (req, res) => {
+    try {
+        const userId = req.auth?.userId;
+        const { id, sectionId, lectureId } = req.params;
+        const updates = req.body;
+
+        const course = await Course.findById(id);
+        if (!course) return res.status(404).json({ success: false, message: 'Course not found' });
+        if (course.educator !== userId) return res.status(403).json({ success: false, message: 'Not authorized' });
+
+        const section = course.courseContent.find(ch => ch.chapterId === sectionId);
+        if (!section) return res.status(404).json({ success: false, message: 'Section not found' });
+
+        const lecture = section.chapterContent.find(lec => lec.lectureId === lectureId);
+        if (!lecture) return res.status(404).json({ success: false, message: 'Lecture not found' });
+
+        // Update allowed fields
+        const allowedFields = ['lectureTitle', 'lectureDescription', 'lectureDuration', 'lectureUrl', 'lecturePdf', 'isPreviewFree'];
+        allowedFields.forEach(field => {
+            if (updates[field] !== undefined) {
+                lecture[field] = updates[field];
+            }
+        });
+
+        await course.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Lecture updated successfully',
+            course,
+        });
+    } catch (error) {
+        console.error('Error updating lecture:', error);
+        res.status(500).json({ success: false, message: error.message });
     }
 };
 

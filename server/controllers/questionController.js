@@ -23,7 +23,7 @@ export const getCourseQuestions = async (req, res) => {
     }
 };
 
-// Get questions for a specific lecture
+// Get questions for a specific lecture (topic wise)
 export const getLectureQuestions = async (req, res) => {
     try {
         const { courseId, lectureId } = req.params;
@@ -37,6 +37,27 @@ export const getLectureQuestions = async (req, res) => {
         });
     } catch (error) {
         console.error('Error getting lecture questions:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+// Get questions for a specific chapter (section wise)
+export const getChapterQuestions = async (req, res) => {
+    try {
+        const { courseId, chapterId } = req.params;
+
+        const questions = await Question.find({ courseId, chapterId })
+            .sort({ createdAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            questions,
+        });
+    } catch (error) {
+        console.error('Error getting chapter questions:', error);
         res.status(500).json({
             success: false,
             message: error.message,
@@ -79,7 +100,8 @@ export const askQuestion = async (req, res) => {
 
         const newQuestion = new Question({
             courseId,
-            lectureId: lectureId || '',
+            lectureId: req.body.lectureId || '',
+            chapterId: req.body.chapterId || '',
             userId,
             userName: user?.name || 'Student',
             userImage: user?.imageUrl || '',
@@ -246,7 +268,7 @@ export const getInstructorQuestions = async (req, res) => {
         const userId = req.auth?.userId;
 
         // Get all courses by this instructor
-        const courses = await Course.find({ educator: userId }).select('_id courseTitle');
+        const courses = await Course.find({ educator: userId }).select('_id courseTitle courseThumbnail');
         const courseIds = courses.map(c => c._id);
 
         // Get all questions for these courses
@@ -259,6 +281,7 @@ export const getInstructorQuestions = async (req, res) => {
             return {
                 ...q.toObject(),
                 courseTitle: course?.courseTitle || 'Unknown Course',
+                courseThumbnail: course?.courseThumbnail || '',
             };
         });
 

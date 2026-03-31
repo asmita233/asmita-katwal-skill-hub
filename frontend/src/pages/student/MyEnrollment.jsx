@@ -22,6 +22,11 @@ const MyEnrollment = () => {
   // Track loading status for specific course certificate generations independently
   const [loadingMap, setLoadingMap] = useState({});
 
+  const handleThumbnailError = (event) => {
+    event.currentTarget.src = '/course-placeholder.svg';
+    event.currentTarget.onerror = null;
+  };
+
   /**
    * Trigger backend API to generate a course completion certificate
    * @param {Event} e - React Synthetic Event
@@ -114,9 +119,10 @@ const MyEnrollment = () => {
                     <td className="py-4 px-4">
                       <div className="flex items-center gap-4">
                         <img
-                          src={course.courseThumbnail}
+                          src={course.courseThumbnail || '/course-placeholder.svg'}
                           alt={course.courseTitle}
                           className="w-16 h-12 md:w-24 md:h-16 object-cover rounded"
+                          onError={handleThumbnailError}
                         />
                         <div>
                           <h3 className="font-medium text-gray-800 text-sm md:text-base">
