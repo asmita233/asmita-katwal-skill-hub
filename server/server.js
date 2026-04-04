@@ -1,112 +1,82 @@
-import express from 'express'; // Standard framework for building the web server
-import cors from 'cors'; // Enables Cross-Origin Resource Sharing (allows frontend to talk to backend)
-import 'dotenv/config'; // Loads environment variables from .env file
-import connectDB from './configs/mongodb.js'; // Helper function to connect to MongoDB
-import connectCloudinary from './configs/cloudinary.js'; // Helper function to connect to Cloudinary storage
-import { clerkMiddleware } from '@clerk/express'; // Middleware for Clerk authentication
-import { stripeWebhook } from './controllers/paymentController.js'; // Controller for Stripe payment events
+const express = require("express");
+const cors = require("cors");
+const dotenv = require("dotenv");
+const connectDB = require("./config/db");
 
-// Import API routes for different features
-import userRoutes from './routes/userRoutes.js';
-import courseRoutes from './routes/courseRoutes.js';
-import paymentRoutes from './routes/paymentRoutes.js';
-import questionRoutes from './routes/questionRoutes.js';
-import certificateRoutes from './routes/certificateRoutes.js';
-import reportsRoutes from './routes/reportsRoutes.js';
+dotenv.config();
 
-const app = express(); // Initialize the Express application
-const isVercelDeployment = Boolean(process.env.VERCEL);
+const app = express();
 
-// Initializing Media storage connection
-connectCloudinary();
+// ====================== MIDDLEWARE ======================
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
-// Stripe webhook route - CRITICAL: Must be placed before express.json() 
-// because it needs the raw request body to verify the stripe signature.
-app.post(
-  '/api/payment/stripe-webhook',
-  express.raw({ type: 'application/json' }),
-  stripeWebhook
-);
+// CORS - Updated for your Render frontend
+const allowedOrigins = [
+  "https://asmita-katwal-skill-hub-fontend.onrender.com",
+  "http://localhost:5173",
+  "http://127.0.0.1:5173"
+];
 
-// General Middlewares
 app.use(cors({
-  origin: [
-    process.env.FRONTEND_URL,
-    'https://edemylmss-frontend.vercel.app',
-    'http://localhost:5173',
-    'http://localhost:5174',
-    'http://localhost:3000'
-  ].filter(Boolean),
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
 }));
-app.use(express.json()); // Automatically parse JSON data in requests
-app.use(express.urlencoded({ extended: true })); // Parse URL-encoded data
 
-// Global Clerk Authentication Middleware
-app.use(clerkMiddleware());
-
-// Serve static files (like images) if any are saved locally in 'uploads'
-app.use('/uploads', express.static('uploads'));
-
-// Define the hierarchy of API routes
-app.use('/api/user', userRoutes); // Handles profile and progress
-app.use('/api/courses', courseRoutes); // Handles course creation and listing
-app.use('/api/payment', paymentRoutes); // Handles Stripe sessions
-app.use('/api/questions', questionRoutes); // Handles Q&A messaging
-app.use('/api/certificates', certificateRoutes); // Handles certificate logic
-app.use('/api', reportsRoutes); // Specialized routes for report screenshots (S3-T01, S3-T02)
+// ====================== ROUTES ======================
+// Add all your routes here (keep whatever you already have)
+app.use("/api/auth", require("./routes/auth"));
+app.use("/api/users", require("./routes/users"));
+app.use("/api/courses", require("./routes/courses"));
+app.use("/api/enrollments", require("./routes/enrollments"));
+app.use("/api/reviews", require("./routes/reviews"));
+// Add any other routes you use (e.g. payments, admin, etc.)
 
 // Health check
-app.get('/', (req, res) => {
+app.get("/", (req, res) => {
   res.json({
     success: true,
-    message: 'Edemy LMS API is running',
-    version: '1.0.0',
+    message: "Edemy / Skill Hub Backend API is running",
+    version: "1.0.0",
+    frontend: process.env.FRONTEND_URL || "not set"
   });
 });
 
-// Create uploads directory if it doesn't exist
-import fs from 'fs';
-if (!fs.existsSync('uploads')) {
-  fs.mkdirSync('uploads');
-}
-
 // 404 handler
 app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'Route not found',
-  });
+  res.status(404).json({ success: false, message: "Route not found" });
 });
 
 // Error handler
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
-  res.status(err.status || 500).json({
+  console.error(err.stack);
+  res.status(500).json({
     success: false,
-    message: err.message || 'Internal server error',
+    message: err.message || "Internal Server Error"
   });
 });
 
-// Port
+// ====================== START SERVER ======================
 const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
-  await connectDB();
-  app.listen(PORT, () => {
-    console.log(`Server running on PORT ${PORT}`);
-  });
+  try {
+    await connectDB();
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`✅ Allowed Frontend: ${process.env.FRONTEND_URL}`);
+    });
+  } catch (error) {
+    console.error("❌ Server failed to start:", error);
+  }
 };
 
-if (isVercelDeployment) {
-  connectDB().catch((error) => {
-    console.error('Failed to initialize Vercel backend:', error.message);
-  });
-} else {
-  startServer().catch((error) => {
-    console.error('Failed to start server:', error.message);
-    process.exit(1);
-  });
-}
-
-export default app;
+startServer();
