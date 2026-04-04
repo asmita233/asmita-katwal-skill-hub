@@ -13,9 +13,12 @@ export const AppContextProvider = (props) => {
     const currency = import.meta.env.VITE_CURRENCY || "$";
     const rawBackendUrl = import.meta.env.VITE_BACKEND_URL?.trim();
     const isLocalBackendUrl = (url) => /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/?$/i.test(url);
-    const backendUrl = import.meta.env.DEV && (!rawBackendUrl || isLocalBackendUrl(rawBackendUrl))
+    const fallbackBackendUrl = import.meta.env.DEV
         ? 'http://127.0.0.1:5000'
-        : (rawBackendUrl || '');
+        : 'https://edemy-backend.vercel.app';
+    const backendUrl = rawBackendUrl && !isLocalBackendUrl(rawBackendUrl)
+        ? rawBackendUrl
+        : fallbackBackendUrl;
 
     // Hooks for programmatic navigation and Clerk authentication
     const navigate = useNavigate();
