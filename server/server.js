@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
-const connectDB = require("./config/db");   // Make sure this file exists
+const connectDB = require("./config/mongodb");   // ← Changed to mongodb.js
 
 dotenv.config();
 
@@ -11,7 +11,7 @@ const app = express();
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
-// CORS Configuration (Fixed for Render)
+// CORS - Fixed for Render
 const allowedOrigins = [
   "https://asmita-katwal-skill-hub-fontend.onrender.com",
   "http://localhost:5173",
@@ -32,14 +32,13 @@ app.use(cors({
 }));
 
 // ====================== ROUTES ======================
-// Add all your routes here
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/users", require("./routes/users"));
 app.use("/api/courses", require("./routes/courses"));
 app.use("/api/enrollments", require("./routes/enrollments"));
 app.use("/api/reviews", require("./routes/reviews"));
 
-// Add any other routes you have (payments, admin, etc.)
+// Add any other routes you have here
 // Example: app.use("/api/payments", require("./routes/payments"));
 
 // Health check route
@@ -75,14 +74,14 @@ const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
   try {
-    await connectDB();
+    await connectDB();           // Connect to MongoDB
     app.listen(PORT, () => {
       console.log(`🚀 Server is running on port ${PORT}`);
       console.log(`✅ Allowed Frontend: ${process.env.FRONTEND_URL}`);
       console.log(`✅ Environment: ${process.env.NODE_ENV}`);
     });
   } catch (error) {
-    console.error("❌ Failed to connect to database or start server:", error);
+    console.error("❌ Failed to start server:", error);
     process.exit(1);
   }
 };
