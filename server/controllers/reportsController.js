@@ -1,7 +1,7 @@
-import Enrollment from '../models/Enrollment.js';
-import Course from '../models/Course.js';
-import User from '../models/User.js';
-import Stripe from 'stripe';
+const Enrollment = require('../models/Enrollment');
+const Course = require('../models/Course');
+const User = require('../models/User');
+const Stripe = require('stripe');
 
 const getStripe = () => {
   if (!process.env.STRIPE_SECRET_KEY) {
@@ -15,7 +15,7 @@ const getStripe = () => {
  * S3-T01: Enrollment System API
  * Purpose: Manual enrollment handler as documented in user report
  */
-export const enrollCourse = async (req, res) => {
+const enrollCourse = async (req, res) => {
   try {
     // Note: Clerk uses req.auth.userId in newer versions
     const userId = req.auth?.userId || req.body.userId;
@@ -49,7 +49,7 @@ export const enrollCourse = async (req, res) => {
 /**
  * S3-T01: Get student enrollments
  */
-export const getUserEnrollments = async (req, res) => {
+const getUserEnrollments = async (req, res) => {
   try {
     const { userId } = req.params;
     const enrollments = await Enrollment.find({ userId }).populate('courseId', 'courseTitle courseThumbnail coursePrice');
@@ -64,7 +64,7 @@ export const getUserEnrollments = async (req, res) => {
  * S3-T02: Stripe Payment Integration
  * Purpose: Manual stripe checkout handler for report screenshots
  */
-export const processPayment = async (req, res) => {
+const processPayment = async (req, res) => {
   try {
     const { courseId } = req.body;
     const userId = req.auth?.userId;
@@ -106,3 +106,5 @@ export const processPayment = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+module.exports = { enrollCourse, getUserEnrollments, processPayment };

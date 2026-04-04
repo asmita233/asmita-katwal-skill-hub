@@ -1,5 +1,5 @@
-import mongoose from 'mongoose';
-import 'dotenv/config';
+const mongoose = require('mongoose');
+require('dotenv/config');
 
 const courseSchema = new mongoose.Schema({
     courseTitle: String,

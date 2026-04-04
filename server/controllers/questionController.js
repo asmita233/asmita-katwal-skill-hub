@@ -1,9 +1,9 @@
-import Question from '../models/Question.js';
-import Course from '../models/Course.js';
-import User from '../models/User.js';
+const Question = require('../models/Question');
+const Course = require('../models/Course');
+const User = require('../models/User');
 
 // Get all questions for a course
-export const getCourseQuestions = async (req, res) => {
+const getCourseQuestions = async (req, res) => {
     try {
         const { courseId } = req.params;
 
@@ -24,7 +24,7 @@ export const getCourseQuestions = async (req, res) => {
 };
 
 // Get questions for a specific lecture (topic wise)
-export const getLectureQuestions = async (req, res) => {
+const getLectureQuestions = async (req, res) => {
     try {
         const { courseId, lectureId } = req.params;
 
@@ -45,7 +45,7 @@ export const getLectureQuestions = async (req, res) => {
 };
 
 // Get questions for a specific chapter (section wise)
-export const getChapterQuestions = async (req, res) => {
+const getChapterQuestions = async (req, res) => {
     try {
         const { courseId, chapterId } = req.params;
 
@@ -66,7 +66,7 @@ export const getChapterQuestions = async (req, res) => {
 };
 
 // Ask a question
-export const askQuestion = async (req, res) => {
+const askQuestion = async (req, res) => {
     try {
         const userId = req.auth?.userId;
         const { courseId, lectureId, question } = req.body;
@@ -125,7 +125,7 @@ export const askQuestion = async (req, res) => {
 };
 
 // Answer a question (instructor or student)
-export const answerQuestion = async (req, res) => {
+const answerQuestion = async (req, res) => {
     try {
         const userId = req.auth?.userId;
         const { questionId } = req.params;
@@ -179,7 +179,7 @@ export const answerQuestion = async (req, res) => {
 };
 
 // Mark question as resolved
-export const resolveQuestion = async (req, res) => {
+const resolveQuestion = async (req, res) => {
     try {
         const userId = req.auth?.userId;
         const { questionId } = req.params;
@@ -222,7 +222,7 @@ export const resolveQuestion = async (req, res) => {
 };
 
 // Delete a question (author or instructor)
-export const deleteQuestion = async (req, res) => {
+const deleteQuestion = async (req, res) => {
     try {
         const userId = req.auth?.userId;
         const { questionId } = req.params;
@@ -263,7 +263,7 @@ export const deleteQuestion = async (req, res) => {
 };
 
 // Get instructor's Q&A (all questions for their courses)
-export const getInstructorQuestions = async (req, res) => {
+const getInstructorQuestions = async (req, res) => {
     try {
         const userId = req.auth?.userId;
 
@@ -296,4 +296,15 @@ export const getInstructorQuestions = async (req, res) => {
             message: error.message,
         });
     }
+};
+
+module.exports = {
+    getCourseQuestions,
+    getLectureQuestions,
+    getChapterQuestions,
+    askQuestion,
+    answerQuestion,
+    resolveQuestion,
+    deleteQuestion,
+    getInstructorQuestions,
 };

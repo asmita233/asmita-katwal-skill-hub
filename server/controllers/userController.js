@@ -1,9 +1,8 @@
-import User from '../models/User.js';
-import { clerkClient } from '@clerk/express';
-import { syncUserFromClerk } from '../utils/userUtils.js';
+const User = require('../models/User');
+const { syncUserFromClerk } = require('../utils/userUtils');
 
 // Get user data
-export const getUserData = async (req, res) => {
+const getUserData = async (req, res) => {
     try {
         const userId = req.auth?.userId;
 
@@ -37,7 +36,7 @@ export const getUserData = async (req, res) => {
 };
 
 // Get enrolled courses
-export const getEnrolledCourses = async (req, res) => {
+const getEnrolledCourses = async (req, res) => {
     try {
         const userId = req.auth?.userId;
 
@@ -77,7 +76,7 @@ export const getEnrolledCourses = async (req, res) => {
 };
 
 // Update user progress for a course
-export const updateProgress = async (req, res) => {
+const updateProgress = async (req, res) => {
     try {
         const userId = req.auth?.userId;
         const { courseId, lectureId } = req.body;
@@ -123,7 +122,7 @@ export const updateProgress = async (req, res) => {
 };
 
 // Add to wishlist
-export const addToWishlist = async (req, res) => {
+const addToWishlist = async (req, res) => {
     try {
         const userId = req.auth?.userId;
         const { courseId } = req.body;
@@ -156,7 +155,7 @@ export const addToWishlist = async (req, res) => {
 };
 
 // Remove from wishlist
-export const removeFromWishlist = async (req, res) => {
+const removeFromWishlist = async (req, res) => {
     try {
         const userId = req.auth?.userId;
         const { courseId } = req.params;
@@ -190,7 +189,7 @@ export const removeFromWishlist = async (req, res) => {
 };
 
 // Get wishlist
-export const getWishlist = async (req, res) => {
+const getWishlist = async (req, res) => {
     try {
         const userId = req.auth?.userId;
         let user = await User.findById(userId).populate('wishlist');
@@ -221,7 +220,7 @@ export const getWishlist = async (req, res) => {
 };
 
 // Clerk Webhook - Create/Update user from Clerk
-export const clerkWebhook = async (req, res) => {
+const clerkWebhook = async (req, res) => {
     try {
         const { type, data } = req.body;
 
@@ -258,7 +257,7 @@ export const clerkWebhook = async (req, res) => {
 };
 
 // Become an educator
-export const becomeEducator = async (req, res) => {
+const becomeEducator = async (req, res) => {
     try {
         const userId = req.auth?.userId;
 
@@ -299,7 +298,7 @@ export const becomeEducator = async (req, res) => {
 };
 
 // Purchase course
-export const purchaseCourse = async (req, res) => {
+const purchaseCourse = async (req, res) => {
     try {
         const userId = req.auth?.userId;
         const { courseId } = req.body;
@@ -326,4 +325,16 @@ export const purchaseCourse = async (req, res) => {
             message: error.message,
         });
     }
+};
+
+module.exports = {
+    getUserData,
+    getEnrolledCourses,
+    updateProgress,
+    addToWishlist,
+    removeFromWishlist,
+    getWishlist,
+    clerkWebhook,
+    becomeEducator,
+    purchaseCourse,
 };

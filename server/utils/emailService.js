@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+const nodemailer = require('nodemailer');
 
 // Create reusable transporter
 // Uses environment variables for SMTP configuration
@@ -37,7 +37,7 @@ initializeTransporter();
  * @param {string} options.html - HTML body content
  * @param {string} [options.text] - Plain text fallback
  */
-export const sendEmail = async ({ to, subject, html, text }) => {
+const sendEmail = async ({ to, subject, html, text }) => {
     if (!transporter) {
         console.log(`📧 Email would be sent to: ${to} | Subject: ${subject}`);
         return { success: false, message: 'Email transporter not configured' };
@@ -63,7 +63,7 @@ export const sendEmail = async ({ to, subject, html, text }) => {
 /**
  * Send enrollment confirmation email
  */
-export const sendEnrollmentEmail = async (userEmail, userName, courseTitle) => {
+const sendEnrollmentEmail = async (userEmail, userName, courseTitle) => {
     return sendEmail({
         to: userEmail,
         subject: `🎉 You're enrolled in "${courseTitle}"!`,
@@ -91,7 +91,7 @@ export const sendEnrollmentEmail = async (userEmail, userName, courseTitle) => {
 /**
  * Send payment success email
  */
-export const sendPaymentSuccessEmail = async (userEmail, userName, courseTitle, amount) => {
+const sendPaymentSuccessEmail = async (userEmail, userName, courseTitle, amount) => {
     return sendEmail({
         to: userEmail,
         subject: `✅ Payment Confirmed for "${courseTitle}"`,
@@ -131,7 +131,7 @@ export const sendPaymentSuccessEmail = async (userEmail, userName, courseTitle, 
 /**
  * Send certificate earned email
  */
-export const sendCertificateEmail = async (userEmail, userName, courseTitle) => {
+const sendCertificateEmail = async (userEmail, userName, courseTitle) => {
     return sendEmail({
         to: userEmail,
         subject: `🏆 Certificate Earned for "${courseTitle}"!`,
@@ -157,4 +157,4 @@ export const sendCertificateEmail = async (userEmail, userName, courseTitle) => 
     });
 };
 
-export default { sendEmail, sendEnrollmentEmail, sendPaymentSuccessEmail, sendCertificateEmail };
+module.exports = { sendEmail, sendEnrollmentEmail, sendPaymentSuccessEmail, sendCertificateEmail };

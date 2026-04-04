@@ -1,9 +1,9 @@
-import { clerkClient } from '@clerk/express';
-import User from '../models/User.js';
-import { syncUserFromClerk } from '../utils/userUtils.js';
+const { clerkClient } = require('@clerk/express');
+const User = require('../models/User');
+const { syncUserFromClerk } = require('../utils/userUtils');
 
 // Middleware to check if user is an educator
-export const isEducator = async (req, res, next) => {
+const isEducator = async (req, res, next) => {
     try {
         const userId = req.auth.userId;
 
@@ -32,7 +32,7 @@ export const isEducator = async (req, res, next) => {
 };
 
 // Middleware to attach user data to request
-export const attachUserData = async (req, res, next) => {
+const attachUserData = async (req, res, next) => {
     try {
         if (req.auth && req.auth.userId) {
             let user = await User.findById(req.auth.userId);
@@ -49,9 +49,9 @@ export const attachUserData = async (req, res, next) => {
 };
 
 // Middleware to verify Clerk webhook
-export const verifyClerkWebhook = async (req, res, next) => {
+const verifyClerkWebhook = async (req, res, next) => {
     try {
-        const { Webhook } = await import('svix');
+        const { Webhook } = require('svix');
 
         const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
 
@@ -80,3 +80,5 @@ export const verifyClerkWebhook = async (req, res, next) => {
         res.status(500).json({ error: 'Server error' });
     }
 };
+
+module.exports = { isEducator, attachUserData, verifyClerkWebhook };

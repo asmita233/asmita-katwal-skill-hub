@@ -1,5 +1,5 @@
-import mongoose from 'mongoose';
-import { resolveSrv } from 'dns/promises';
+const mongoose = require('mongoose');
+const { resolveSrv } = require('dns/promises');
 
 const buildSeedListUriFromSrv = async (mongoSrvUri) => {
     const parsed = new URL(mongoSrvUri);
@@ -120,4 +120,4 @@ const connectDB = async () => {
     }
 };
 
-export default connectDB;
+module.exports = connectDB;

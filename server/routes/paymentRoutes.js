@@ -1,11 +1,11 @@
-import express from 'express';
-import { requireAuth } from '@clerk/express';
-import {
+const express = require('express');
+const { requireAuth } = require('@clerk/express');
+const {
     createCheckoutSession,
     verifyPayment,
     stripeWebhook,
     getPurchaseHistory,
-} from '../controllers/paymentController.js';
+} = require('../controllers/paymentController');
 
 const router = express.Router();
 
@@ -17,4 +17,4 @@ router.get('/purchase-history', requireAuth(), getPurchaseHistory);
 // Stripe webhook - raw body needed
 // This route is handled separately in server.js
 
-export default router;
+module.exports = router;

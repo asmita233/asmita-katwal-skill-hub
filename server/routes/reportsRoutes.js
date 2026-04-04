@@ -1,6 +1,6 @@
-import express from 'express';
-import { requireAuth } from '@clerk/express';
-import { enrollCourse, getUserEnrollments, processPayment } from '../controllers/reportsController.js';
+const express = require('express');
+const { requireAuth } = require('@clerk/express');
+const { enrollCourse, getUserEnrollments, processPayment } = require('../controllers/reportsController');
 
 const router = express.Router();
 
@@ -11,4 +11,4 @@ router.get('/enrollments/:userId', requireAuth(), getUserEnrollments);
 // S3-T02: Stripe Payment Integration
 router.post('/payment/process', requireAuth(), processPayment);
 
-export default router;
+module.exports = router;

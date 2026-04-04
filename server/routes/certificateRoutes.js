@@ -1,12 +1,12 @@
-import express from 'express';
-import { requireAuth } from '@clerk/express';
-import {
+const express = require('express');
+const { requireAuth } = require('@clerk/express');
+const {
     generateCertificate,
     getUserCertificates,
     getCertificateById,
     verifyCertificate,
     checkCertificateEligibility,
-} from '../controllers/certificateController.js';
+} = require('../controllers/certificateController');
 
 const router = express.Router();
 
@@ -19,4 +19,4 @@ router.get('/my-certificates', requireAuth(), getUserCertificates);
 router.get('/eligibility/:courseId', requireAuth(), checkCertificateEligibility);
 router.get('/:certificateId', requireAuth(), getCertificateById);
 
-export default router;
+module.exports = router;

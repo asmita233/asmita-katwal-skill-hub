@@ -1,19 +1,27 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
-const connectDB = require("./configs/mongodb");   // ← Fixed: "configs" with 's'
+const connectDB = require("./configs/mongodb");
+const connectCloudinary = require("./configs/cloudinary");
 
 dotenv.config();
 
 const app = express();
 
+const frontendUrl = process.env.FRONTEND_URL || "https://asmita-katwal-skill-hub-fontend.onrender.com";
+
+console.log("🚀 Starting Skill Hub Backend...");
+console.log("Node Environment:", process.env.NODE_ENV || "development");
+console.log("Frontend URL:", frontendUrl);
+console.log("MongoDB URI Set:", Boolean(process.env.MONGODB_URI));
+
 // ====================== MIDDLEWARE ======================
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
-// CORS for Render + Local
+// CORS
 const allowedOrigins = [
-  "https://asmita-katwal-skill-hub-fontend.onrender.com",
+  frontendUrl,
   "http://localhost:5173",
   "http://127.0.0.1:5173"
 ];
@@ -32,11 +40,13 @@ app.use(cors({
 }));
 
 // ====================== ROUTES ======================
-app.use("/api/auth", require("./routes/auth"));
-app.use("/api/users", require("./routes/users"));
-app.use("/api/courses", require("./routes/courses"));
-app.use("/api/enrollments", require("./routes/enrollments"));
-app.use("/api/reviews", require("./routes/reviews"));
+app.use("/api/user", require("./routes/userRoutes"));
+app.use("/api/users", require("./routes/userRoutes"));
+app.use("/api/courses", require("./routes/courseRoutes"));
+app.use("/api/payment", require("./routes/paymentRoutes"));
+app.use("/api/questions", require("./routes/questionRoutes"));
+app.use("/api/certificates", require("./routes/certificateRoutes"));
+app.use("/api/reports", require("./routes/reportsRoutes"));
 
 // Health check
 app.get("/", (req, res) => {
@@ -49,12 +59,11 @@ app.get("/", (req, res) => {
   });
 });
 
-// 404 handler
+// 404 & Error handlers
 app.use((req, res) => {
   res.status(404).json({ success: false, message: "Route not found" });
 });
 
-// Error handler
 app.use((err, req, res, next) => {
   console.error("Server Error:", err.stack);
   res.status(500).json({ success: false, message: err.message || "Internal Server Error" });
@@ -65,10 +74,13 @@ const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
   try {
+    connectCloudinary();
     await connectDB();
+
     app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`✅ Allowed Frontend: ${process.env.FRONTEND_URL}`);
+      console.log(`✅ Server running on port ${PORT}`);
+      console.log(`✅ Allowed Frontend: ${frontendUrl}`);
+      console.log(`✅ Routes mounted successfully`);
     });
   } catch (error) {
     console.error("❌ Failed to start server:", error.message);

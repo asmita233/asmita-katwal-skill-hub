@@ -1,7 +1,7 @@
-import express from 'express';
-import { requireAuth } from '@clerk/express';
-import multer from 'multer';
-import {
+const express = require('express');
+const { requireAuth } = require('@clerk/express');
+const multer = require('multer');
+const {
     getAllCourses,
     getCourseById,
     createCourse,
@@ -22,7 +22,7 @@ import {
     deleteLecture,
     updateSection,
     updateLecture,
-} from '../controllers/courseController.js';
+} = require('../controllers/courseController');
 
 const router = express.Router();
 
@@ -106,4 +106,4 @@ router.delete('/:id/section/:sectionId/lecture/:lectureId', requireAuth(), delet
 router.put('/:id/section/:sectionId', requireAuth(), updateSection);
 router.put('/:id/section/:sectionId/lecture/:lectureId', requireAuth(), updateLecture);
 
-export default router;
+module.exports = router;

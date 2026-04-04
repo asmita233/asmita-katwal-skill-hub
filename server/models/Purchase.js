@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
 const purchaseSchema = new mongoose.Schema({
     courseId: {
@@ -46,4 +46,4 @@ purchaseSchema.index({ stripeSessionId: 1 });
 
 const Purchase = mongoose.model('Purchase', purchaseSchema);
 
-export default Purchase;
+module.exports = Purchase;

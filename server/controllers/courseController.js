@@ -1,12 +1,12 @@
-import Course from '../models/Course.js';
-import User from '../models/User.js';
-import { v2 as cloudinary } from 'cloudinary';
-import Purchase from '../models/Purchase.js';
-import fs from 'fs';
-import { syncUserFromClerk } from '../utils/userUtils.js';
+const Course = require('../models/Course');
+const User = require('../models/User');
+const { v2: cloudinary } = require('cloudinary');
+const Purchase = require('../models/Purchase');
+const fs = require('fs');
+const { syncUserFromClerk } = require('../utils/userUtils');
 
 // Get all courses (public)
-export const getAllCourses = async (req, res) => {
+const getAllCourses = async (req, res) => {
     try {
         const {
             search,
@@ -79,7 +79,7 @@ export const getAllCourses = async (req, res) => {
 };
 
 // Get single course by ID (public)
-export const getCourseById = async (req, res) => {
+const getCourseById = async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -106,7 +106,7 @@ export const getCourseById = async (req, res) => {
 };
 
 // Create a new course (educator only)
-export const createCourse = async (req, res) => {
+const createCourse = async (req, res) => {
     try {
         const userId = req.auth?.userId;
 
@@ -190,7 +190,7 @@ export const createCourse = async (req, res) => {
 };
 
 // Update course (educator only)
-export const updateCourse = async (req, res) => {
+const updateCourse = async (req, res) => {
     try {
         const userId = req.auth?.userId;
         const { id } = req.params;
@@ -232,7 +232,7 @@ export const updateCourse = async (req, res) => {
 };
 
 // Delete course (educator only)
-export const deleteCourse = async (req, res) => {
+const deleteCourse = async (req, res) => {
     try {
         const userId = req.auth.userId;
         const { id } = req.params;
@@ -269,7 +269,7 @@ export const deleteCourse = async (req, res) => {
 };
 
 // Upload course thumbnail
-export const uploadThumbnail = async (req, res) => {
+const uploadThumbnail = async (req, res) => {
     try {
         const auth = typeof req.auth === 'function' ? req.auth() : req.auth;
         const userId = auth?.userId;
@@ -327,7 +327,7 @@ export const uploadThumbnail = async (req, res) => {
 };
 
 // Upload lecture video
-export const uploadVideo = async (req, res) => {
+const uploadVideo = async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({
@@ -362,7 +362,7 @@ export const uploadVideo = async (req, res) => {
 };
 
 // Upload PDF/study material for a lecture
-export const uploadPdf = async (req, res) => {
+const uploadPdf = async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({
@@ -397,7 +397,7 @@ export const uploadPdf = async (req, res) => {
 };
 
 // Toggle publish status  allow tecaher to work on course
-export const togglePublish = async (req, res) => {
+const togglePublish = async (req, res) => {
     try {
         const userId = req.auth.userId;
         const { id } = req.params;
@@ -436,7 +436,7 @@ export const togglePublish = async (req, res) => {
 };
 
 // Add rating/review
-export const addRating = async (req, res) => {
+const addRating = async (req, res) => {
     try {
         const userId = req.auth.userId;
         const { id } = req.params;
@@ -500,7 +500,7 @@ export const addRating = async (req, res) => {
 };
 
 // Get educator's courses
-export const getEducatorCourses = async (req, res) => {
+const getEducatorCourses = async (req, res) => {
     try {
         const userId = req.auth.userId;
 
@@ -521,7 +521,7 @@ export const getEducatorCourses = async (req, res) => {
 };
 
 // Get educator dashboard data
-export const getEducatorDashboard = async (req, res) => {
+const getEducatorDashboard = async (req, res) => {
     try {
         const userId = req.auth.userId;
 
@@ -572,7 +572,7 @@ export const getEducatorDashboard = async (req, res) => {
 };
 
 // Get enrolled students for educator
-export const getEnrolledStudents = async (req, res) => {
+const getEnrolledStudents = async (req, res) => {
     try {
         const userId = req.auth.userId;
 
@@ -613,7 +613,7 @@ export const getEnrolledStudents = async (req, res) => {
 // ============================================================
 
 // Update entire course content (sections + lectures)
-export const updateCourseContent = async (req, res) => {
+const updateCourseContent = async (req, res) => {
     try {
         const userId = req.auth?.userId;
         const { id } = req.params;
@@ -648,7 +648,7 @@ export const updateCourseContent = async (req, res) => {
 };
 
 // Reorder sections and lectures (drag and drop)
-export const reorderContent = async (req, res) => {
+const reorderContent = async (req, res) => {
     try {
         const userId = req.auth?.userId;
         const { id } = req.params;
@@ -689,7 +689,7 @@ export const reorderContent = async (req, res) => {
 };
 
 // Delete a section
-export const deleteSection = async (req, res) => {
+const deleteSection = async (req, res) => {
     try {
         const userId = req.auth?.userId;
         const { id, sectionId } = req.params;
@@ -719,7 +719,7 @@ export const deleteSection = async (req, res) => {
 };
 
 // Delete a lecture from a section
-export const deleteLecture = async (req, res) => {
+const deleteLecture = async (req, res) => {
     try {
         const userId = req.auth?.userId;
         const { id, sectionId, lectureId } = req.params;
@@ -752,7 +752,7 @@ export const deleteLecture = async (req, res) => {
 };
 
 // Update a section title
-export const updateSection = async (req, res) => {
+const updateSection = async (req, res) => {
     try {
         const userId = req.auth?.userId;
         const { id, sectionId } = req.params;
@@ -780,7 +780,7 @@ export const updateSection = async (req, res) => {
 };
 
 // Update a lecture
-export const updateLecture = async (req, res) => {
+const updateLecture = async (req, res) => {
     try {
         const userId = req.auth?.userId;
         const { id, sectionId, lectureId } = req.params;
@@ -815,5 +815,27 @@ export const updateLecture = async (req, res) => {
         console.error('Error updating lecture:', error);
         res.status(500).json({ success: false, message: error.message });
     }
+};
+
+module.exports = {
+    getAllCourses,
+    getCourseById,
+    createCourse,
+    updateCourse,
+    deleteCourse,
+    uploadThumbnail,
+    uploadVideo,
+    uploadPdf,
+    togglePublish,
+    addRating,
+    getEducatorCourses,
+    getEducatorDashboard,
+    getEnrolledStudents,
+    updateCourseContent,
+    reorderContent,
+    deleteSection,
+    deleteLecture,
+    updateSection,
+    updateLecture,
 };
 

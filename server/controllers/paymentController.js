@@ -1,10 +1,10 @@
-import Stripe from 'stripe';
-import Course from '../models/Course.js';
-import User from '../models/User.js';
-import Purchase from '../models/Purchase.js';
-import Enrollment from '../models/Enrollment.js';
-import { sendEnrollmentEmail, sendPaymentSuccessEmail } from '../utils/emailService.js';
-import { syncUserFromClerk } from '../utils/userUtils.js';
+const Stripe = require('stripe');
+const Course = require('../models/Course');
+const User = require('../models/User');
+const Purchase = require('../models/Purchase');
+const Enrollment = require('../models/Enrollment');
+const { sendEnrollmentEmail, sendPaymentSuccessEmail } = require('../utils/emailService');
+const { syncUserFromClerk } = require('../utils/userUtils');
 
 const getStripe = () => {
     if (!process.env.STRIPE_SECRET_KEY) {
@@ -16,7 +16,7 @@ const getStripe = () => {
 
 // CREATE STRIPE CHECKOUT SESSION:
 // This function is triggered when a student clicks Buy Course.
-export const createCheckoutSession = async (req, res) => {
+const createCheckoutSession = async (req, res) => {
     try {
         const userId = req.auth?.userId;
         const { courseId } = req.body;
@@ -117,7 +117,7 @@ export const createCheckoutSession = async (req, res) => {
 };
 
 // Verify payment and complete enrollment
-export const verifyPayment = async (req, res) => {
+const verifyPayment = async (req, res) => {
     try {
         const { sessionId } = req.body;
         const stripe = getStripe();
@@ -194,7 +194,7 @@ export const verifyPayment = async (req, res) => {
 // STRIPE WEBHOOK HANDLER:
 // This is the MOST SECURE way to handle payments. 
 // Even if the student closes their browser, Stripe will call this URL to tell us the payment was successful.
-export const stripeWebhook = async (req, res) => {
+const stripeWebhook = async (req, res) => {
     const sig = req.headers['stripe-signature']; // Signature ensures the request actually came from Stripe
     const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -308,7 +308,7 @@ export const stripeWebhook = async (req, res) => {
 };
 
 // Get user's purchase history
-export const getPurchaseHistory = async (req, res) => {
+const getPurchaseHistory = async (req, res) => {
     try {
         const userId = req.auth?.userId;
 
@@ -328,3 +328,5 @@ export const getPurchaseHistory = async (req, res) => {
         });
     }
 };
+
+module.exports = { createCheckoutSession, verifyPayment, stripeWebhook, getPurchaseHistory };

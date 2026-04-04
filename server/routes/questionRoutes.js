@@ -1,6 +1,6 @@
-import express from 'express';
-import { requireAuth } from '@clerk/express';
-import {
+const express = require('express');
+const { requireAuth } = require('@clerk/express');
+const {
     getCourseQuestions,
     getLectureQuestions,
     getChapterQuestions,
@@ -9,7 +9,7 @@ import {
     resolveQuestion,
     deleteQuestion,
     getInstructorQuestions,
-} from '../controllers/questionController.js';
+} = require('../controllers/questionController');
 
 const router = express.Router();
 
@@ -27,4 +27,4 @@ router.delete('/:questionId', requireAuth(), deleteQuestion);
 // Instructor routes
 router.get('/instructor/all', requireAuth(), getInstructorQuestions);
 
-export default router;
+module.exports = router;

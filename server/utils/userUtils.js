@@ -1,5 +1,5 @@
-import User from '../models/User.js';
-import { clerkClient } from '@clerk/express';
+const User = require('../models/User');
+const { clerkClient } = require('@clerk/express');
 
 /**
  * Syncs a user from Clerk to the local database.
@@ -7,7 +7,7 @@ import { clerkClient } from '@clerk/express';
  * @param {string} userId - The Clerk user ID
  * @returns {Promise<Object|null>} The synced user object or null if failed
  */
-export const syncUserFromClerk = async (userId) => {
+const syncUserFromClerk = async (userId) => {
     try {
         if (!userId) return null;
         
@@ -35,3 +35,5 @@ export const syncUserFromClerk = async (userId) => {
     }
     return null;
 };
+
+module.exports = { syncUserFromClerk };

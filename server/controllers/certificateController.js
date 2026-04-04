@@ -1,11 +1,11 @@
-import Certificate from '../models/Certificate.js';
-import Course from '../models/Course.js';
-import User from '../models/User.js';
-import { v4 as uuidv4 } from 'uuid';
-import { syncUserFromClerk } from '../utils/userUtils.js';
+const Certificate = require('../models/Certificate');
+const Course = require('../models/Course');
+const User = require('../models/User');
+const { v4: uuidv4 } = require('uuid');
+const { syncUserFromClerk } = require('../utils/userUtils');
 
 // Generate certificate for a completed course
-export const generateCertificate = async (req, res) => {
+const generateCertificate = async (req, res) => {
     try {
         const userId = req.auth?.userId;
         const { courseId } = req.body;
@@ -106,7 +106,7 @@ export const generateCertificate = async (req, res) => {
 };
 
 // Get user's certificates (with auto-generation for completed courses)
-export const getUserCertificates = async (req, res) => {
+const getUserCertificates = async (req, res) => {
     try {
         const userId = req.auth?.userId;
 
@@ -184,7 +184,7 @@ export const getUserCertificates = async (req, res) => {
 };
 
 // Get certificate by ID
-export const getCertificateById = async (req, res) => {
+const getCertificateById = async (req, res) => {
     try {
         const { certificateId } = req.params;
 
@@ -213,7 +213,7 @@ export const getCertificateById = async (req, res) => {
 };
 
 // Verify certificate (public)
-export const verifyCertificate = async (req, res) => {
+const verifyCertificate = async (req, res) => {
     try {
         const { certificateId } = req.params;
 
@@ -249,7 +249,7 @@ export const verifyCertificate = async (req, res) => {
 };
 
 // Check if user can get certificate for a course
-export const checkCertificateEligibility = async (req, res) => {
+const checkCertificateEligibility = async (req, res) => {
     try {
         const userId = req.auth?.userId;
         const { courseId } = req.params;
@@ -320,4 +320,12 @@ export const checkCertificateEligibility = async (req, res) => {
             message: error.message,
         });
     }
+};
+
+module.exports = {
+    generateCertificate,
+    getUserCertificates,
+    getCertificateById,
+    verifyCertificate,
+    checkCertificateEligibility,
 };

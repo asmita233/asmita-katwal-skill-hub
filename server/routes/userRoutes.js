@@ -1,6 +1,6 @@
-import express from 'express';
-import { requireAuth } from '@clerk/express';
-import {
+const express = require('express');
+const { requireAuth } = require('@clerk/express');
+const {
     getUserData,
     getEnrolledCourses,
     updateProgress,
@@ -9,7 +9,7 @@ import {
     getWishlist,
     clerkWebhook,
     becomeEducator,
-} from '../controllers/userController.js';
+} = require('../controllers/userController');
 
 const router = express.Router();
 
@@ -27,4 +27,4 @@ router.get('/wishlist', requireAuth(), getWishlist);
 router.post('/wishlist', requireAuth(), addToWishlist);
 router.delete('/wishlist/:courseId', requireAuth(), removeFromWishlist);
 
-export default router;
+module.exports = router;

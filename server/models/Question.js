@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
 const questionSchema = new mongoose.Schema({
     courseId: {
@@ -69,4 +69,4 @@ questionSchema.index({ lectureId: 1 });
 
 const Question = mongoose.model('Question', questionSchema);
 
-export default Question;
+module.exports = Question;

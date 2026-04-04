@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
 // Schema for individual lectures within a chapter
 const lectureSchema = new mongoose.Schema({
@@ -122,4 +122,4 @@ courseSchema.set('toObject', { virtuals: true });
 
 const Course = mongoose.model('Course', courseSchema);
 
-export default Course;
+module.exports = Course;
