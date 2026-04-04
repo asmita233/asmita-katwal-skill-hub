@@ -2,9 +2,10 @@ import React, { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../../context/AppContext';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import API_BASE_URL from '../../utils/api';
 
 const MyCourses = () => {
-  const { backendUrl, getToken, currency, navigate } = useContext(AppContext);
+  const { getToken, currency, navigate } = useContext(AppContext);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState(null);
@@ -18,7 +19,7 @@ const MyCourses = () => {
         toast.error('Please log in to continue');
         return;
       }
-      const { data } = await axios.get(`${backendUrl}/api/courses/educator/my-courses`, {
+      const { data } = await axios.get(`${API_BASE_URL}/api/courses/educator/my-courses`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (data.success) {
@@ -56,7 +57,7 @@ const MyCourses = () => {
         return;
       }
       const { data } = await axios.delete(
-        `${backendUrl}/api/courses/${courseToDelete._id}`,
+        `${API_BASE_URL}/api/courses/${courseToDelete._id}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -176,7 +177,7 @@ const MyCourses = () => {
                   onClick={async () => {
                     try {
                       const token = await getToken();
-                      const { data } = await axios.patch(`${backendUrl}/api/courses/${course._id}/publish`, {}, {
+                      const { data } = await axios.patch(`${API_BASE_URL}/api/courses/${course._id}/publish`, {}, {
                         headers: { Authorization: `Bearer ${token}` }
                       });
                       if (data.success) {

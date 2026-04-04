@@ -4,9 +4,10 @@ import { useUser } from '@clerk/clerk-react';
 import Footer from '../../components/students/Footer';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import API_BASE_URL from '../../utils/api';
 
 const Profile = () => {
-    const { backendUrl, getToken, enrolledCourses, isEducator, navigate } = useContext(AppContext);
+    const { getToken, enrolledCourses, isEducator, navigate } = useContext(AppContext);
     const { user } = useUser();
     const [userData, setUserData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -23,7 +24,7 @@ const Profile = () => {
             const token = await getToken();
 
             // Fetch user data
-            const { data: userRes } = await axios.get(backendUrl + '/api/user/me', {
+            const { data: userRes } = await axios.get(`${API_BASE_URL}/api/user/me`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
@@ -54,7 +55,7 @@ const Profile = () => {
 
             // Fetch certificates count
             try {
-                const { data: certRes } = await axios.get(backendUrl + '/api/certificates/user', {
+                const { data: certRes } = await axios.get(`${API_BASE_URL}/api/certificates/user`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 if (certRes.success) {

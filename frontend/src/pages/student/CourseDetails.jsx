@@ -6,6 +6,7 @@ import Footer from '../../components/students/Footer';
 import ReactPlayer from 'react-player';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import API_BASE_URL from '../../utils/api';
 
 const CourseDetails = () => {
   // Extract unique course ID from URL
@@ -21,7 +22,6 @@ const CourseDetails = () => {
     calculateNoOfLectures,
     navigate,
     user,
-    backendUrl,
     getToken,
     enrolledCourses,
     fetchEnrolledCourses,
@@ -51,7 +51,7 @@ const CourseDetails = () => {
   // Fetch individual course details from the backend
   const fetchCourseData = async () => {
     try {
-      const { data } = await axios.get(backendUrl + '/api/courses/' + id);
+      const { data } = await axios.get(`${API_BASE_URL}/api/courses/${id}`);
       if (data.success) {
         setCourseData(data.course);
         if (data.course.courseContent && data.course.courseContent.length > 0) {
@@ -81,7 +81,7 @@ const CourseDetails = () => {
     if (!user) return;
     try {
       const token = await getToken();
-      const { data } = await axios.get(backendUrl + '/api/user/wishlist', {
+      const { data } = await axios.get(`${API_BASE_URL}/api/user/wishlist`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (data.success) {
@@ -104,7 +104,7 @@ const CourseDetails = () => {
     try {
       const token = await getToken();
       if (inWishlist) {
-        const { data } = await axios.delete(`${backendUrl}/api/user/wishlist/${id}`, {
+        const { data } = await axios.delete(`${API_BASE_URL}/api/user/wishlist/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (data.success) {
@@ -112,7 +112,7 @@ const CourseDetails = () => {
           toast.success('Removed from wishlist');
         }
       } else {
-        const { data } = await axios.post(`${backendUrl}/api/user/wishlist`,
+        const { data } = await axios.post(`${API_BASE_URL}/api/user/wishlist`,
           { courseId: id },
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -143,7 +143,7 @@ const CourseDetails = () => {
     try {
       const token = await getToken();
       const { data } = await axios.post(
-        `${backendUrl}/api/courses/${id}/rating`,
+        `${API_BASE_URL}/api/courses/${id}/rating`,
         { rating: userRating, review: reviewText },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -225,7 +225,7 @@ const CourseDetails = () => {
 
     try {
       const token = await getToken();
-      const { data } = await axios.post(backendUrl + '/api/payment/create-checkout-session', {
+      const { data } = await axios.post(`${API_BASE_URL}/api/payment/create-checkout-session`, {
         courseId: id
       }, {
         headers: { Authorization: `Bearer ${token}` }

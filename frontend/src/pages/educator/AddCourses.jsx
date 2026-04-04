@@ -7,9 +7,10 @@ import { toast } from 'react-toastify';
 import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
 import uniqid from 'uniqid';
+import API_BASE_URL from '../../utils/api';
 
 const AddCourses = () => {
-  const { currency, navigate, backendUrl, getToken } = useContext(AppContext);
+  const { currency, navigate, getToken } = useContext(AppContext);
   const quillRef = useRef(null);
   const editorRef = useRef(null);
 
@@ -130,7 +131,7 @@ const AddCourses = () => {
       const formData = new FormData();
       formData.append('video', lectureVideo);
 
-      const { data } = await axios.post(`${backendUrl}/api/courses/upload-video`, formData, {
+      const { data } = await axios.post(`${API_BASE_URL}/api/courses/upload-video`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
@@ -165,7 +166,7 @@ const AddCourses = () => {
         const formData = new FormData();
         formData.append('pdf', lecturePdf);
 
-        const { data } = await axios.post(`${backendUrl}/api/courses/upload-pdf`, formData, {
+        const { data } = await axios.post(`${API_BASE_URL}/api/courses/upload-pdf`, formData, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'multipart/form-data'
@@ -261,7 +262,7 @@ const AddCourses = () => {
       };
 
       // Step 1: Initial Course Creation
-      const { data } = await axios.post(backendUrl + '/api/courses', courseData, {
+      const { data } = await axios.post(`${API_BASE_URL}/api/courses`, courseData, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -273,7 +274,7 @@ const AddCourses = () => {
           const formData = new FormData();
           formData.append('thumbnail', thumbnail);
 
-          await axios.post(`${backendUrl}/api/courses/${courseId}/thumbnail`, formData, {
+          await axios.post(`${API_BASE_URL}/api/courses/${courseId}/thumbnail`, formData, {
             headers: {
               Authorization: `Bearer ${token}`,
               'Content-Type': 'multipart/form-data'
@@ -282,7 +283,7 @@ const AddCourses = () => {
         }
 
         // Step 3: Patch request to mark the course as 'published'
-        await axios.patch(`${backendUrl}/api/courses/${courseId}/publish`, {}, {
+        await axios.patch(`${API_BASE_URL}/api/courses/${courseId}/publish`, {}, {
           headers: { Authorization: `Bearer ${token}` }
         });
 

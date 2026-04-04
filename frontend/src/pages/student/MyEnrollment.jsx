@@ -3,13 +3,14 @@ import { AppContext } from '../../context/AppContext';
 import { assets } from '../../assets/assets';
 import Footer from '../../components/students/Footer';
 import { Line } from 'rc-progress';
+import API_BASE_URL from '../../utils/api';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
 const MyEnrollment = () => {
   // Destructure global state and utility functions from AppContext
   const {
-    backendUrl,
+    
     getToken,
     navigate,
     calculateRating,
@@ -37,7 +38,7 @@ const MyEnrollment = () => {
     setLoadingMap(prev => ({ ...prev, [courseId]: true }));
     try {
       const token = await getToken();
-      const { data } = await axios.post(backendUrl + '/api/certificates/generate', { courseId }, {
+      const { data } = await axios.post(`${API_BASE_URL}/api/certificates/generate`, { courseId }, {
         headers: { Authorization: `Bearer ${token}` }
       });
 

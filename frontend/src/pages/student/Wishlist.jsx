@@ -4,9 +4,10 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import Footer from '../../components/students/Footer';
 import { assets } from '../../assets/assets';
+import API_BASE_URL from '../../utils/api';
 
 const Wishlist = () => {
-    const { backendUrl, getToken, navigate, user, currency, calculateRating, enrolledCourses } = useContext(AppContext);
+    const { getToken, navigate, user, currency, calculateRating, enrolledCourses } = useContext(AppContext);
     const [wishlist, setWishlist] = useState([]);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState({});
@@ -32,7 +33,7 @@ const Wishlist = () => {
     const fetchWishlist = async () => {
         try {
             const token = await getToken();
-            const { data } = await axios.get(backendUrl + '/api/user/wishlist', {
+            const { data } = await axios.get(`${API_BASE_URL}/api/user/wishlist`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (data.success) {
@@ -50,7 +51,7 @@ const Wishlist = () => {
         try {
             setActionLoading((prev) => ({ ...prev, [courseId]: true }));
             const token = await getToken();
-            const { data } = await axios.delete(backendUrl + `/api/user/wishlist/${courseId}`, {
+            const { data } = await axios.delete(`${API_BASE_URL}/api/user/wishlist/${courseId}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (data.success) {
@@ -75,7 +76,7 @@ const Wishlist = () => {
             setActionLoading((prev) => ({ ...prev, [course._id]: true }));
             const token = await getToken();
             const { data } = await axios.post(
-                backendUrl + '/api/payment/create-checkout-session',
+                `${API_BASE_URL}/api/payment/create-checkout-session`,
                 { courseId: course._id },
                 { headers: { Authorization: `Bearer ${token}` } }
             );

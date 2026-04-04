@@ -2,9 +2,10 @@ import React, { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../../context/AppContext';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import API_BASE_URL from '../../utils/api';
 
 const EducatorQA = () => {
-    const { backendUrl, getToken, user } = useContext(AppContext);
+    const { getToken, user } = useContext(AppContext);
     const [questions, setQuestions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [replyText, setReplyText] = useState({});
@@ -13,7 +14,7 @@ const EducatorQA = () => {
     const fetchInstructorQuestions = async () => {
         try {
             const token = await getToken();
-            const { data } = await axios.get(`${backendUrl}/api/questions/instructor/all`, {
+            const { data } = await axios.get(`${API_BASE_URL}/api/questions/instructor/all`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (data.success) {
@@ -39,7 +40,7 @@ const EducatorQA = () => {
         try {
             const token = await getToken();
             const { data } = await axios.post(
-                `${backendUrl}/api/questions/${questionId}/answer`,
+                `${API_BASE_URL}/api/questions/${questionId}/answer`,
                 { answer: text },
                 { headers: { Authorization: `Bearer ${token}` } }
             );

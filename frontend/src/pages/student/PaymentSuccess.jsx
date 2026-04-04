@@ -4,11 +4,12 @@ import { AppContext } from '../../context/AppContext';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { assets } from '../../assets/assets';
+import API_BASE_URL from '../../utils/api';
 
 const PaymentSuccess = () => {
     const [searchParams] = useSearchParams();
     const sessionId = searchParams.get('session_id');
-    const { navigate, backendUrl, getToken, fetchEnrolledCourses } = useContext(AppContext);
+    const { navigate, getToken, fetchEnrolledCourses } = useContext(AppContext);
     const [verifying, setVerifying] = useState(true);
     const [success, setSuccess] = useState(false);
 
@@ -22,7 +23,7 @@ const PaymentSuccess = () => {
             try {
                 const token = await getToken();
                 const { data } = await axios.post(
-                    backendUrl + '/api/payment/verify-payment',
+                    `${API_BASE_URL}/api/payment/verify-payment`,
                     { sessionId },
                     { headers: { Authorization: `Bearer ${token}` } }
                 );

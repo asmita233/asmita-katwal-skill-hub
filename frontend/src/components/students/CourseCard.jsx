@@ -3,10 +3,11 @@ import { AppContext } from '../../context/AppContext';
 import { assets } from '../../assets/assets';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import API_BASE_URL from '../../utils/api';
 
 const CourseCard = ({ course }) => {
   // Extracting global context values for currency, rating calculations, and enrollment data
-  const { currency, calculateRating, enrolledCourses, navigate, userData, getToken, backendUrl, user } = useContext(AppContext);
+  const { currency, calculateRating, enrolledCourses, navigate, userData, getToken, user } = useContext(AppContext);
 
   // Calculate average rating for this specific course
   const rating = calculateRating(course);
@@ -35,7 +36,7 @@ const CourseCard = ({ course }) => {
 
     try {
       const token = await getToken();
-      const { data } = await axios.post(backendUrl + '/api/payment/create-checkout-session', {
+      const { data } = await axios.post(`${API_BASE_URL}/api/payment/create-checkout-session`, {
         courseId: course._id
       }, {
         headers: { Authorization: `Bearer ${token}` }

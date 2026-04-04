@@ -2,10 +2,11 @@ import React, { useContext, useState, useEffect } from 'react';
 import { AppContext } from '../../context/AppContext';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import API_BASE_URL from '../../utils/api';
 
 const QASection = ({ courseId, lectureId, chapterId }) => {
     // Shared authentication context
-    const { backendUrl, getToken, user } = useContext(AppContext);
+    const { getToken, user } = useContext(AppContext);
 
     // UI State for managing discussion threads
     const [questions, setQuestions] = useState([]); // Array of question objects with nested answers
@@ -21,12 +22,12 @@ const QASection = ({ courseId, lectureId, chapterId }) => {
      */
     const fetchQuestions = async () => {
         try {
-            let url = `${backendUrl}/api/questions/course/${courseId}`;
+            let url = `${API_BASE_URL}/api/questions/course/${courseId}`;
             
             if (chapterId) {
-                url = `${backendUrl}/api/questions/course/${courseId}/chapter/${chapterId}`;
+                url = `${API_BASE_URL}/api/questions/course/${courseId}/chapter/${chapterId}`;
             } else if (lectureId) {
-                url = `${backendUrl}/api/questions/course/${courseId}/lecture/${lectureId}`;
+                url = `${API_BASE_URL}/api/questions/course/${courseId}/lecture/${lectureId}`;
             }
             
             const { data } = await axios.get(url);
@@ -56,7 +57,7 @@ const QASection = ({ courseId, lectureId, chapterId }) => {
         try {
             const token = await getToken();
             const { data } = await axios.post(
-                `${backendUrl}/api/questions`,
+                `${API_BASE_URL}/api/questions`,
                 { courseId, lectureId, chapterId, question: newQuestion },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
@@ -82,7 +83,7 @@ const QASection = ({ courseId, lectureId, chapterId }) => {
         try {
             const token = await getToken();
             const { data } = await axios.post(
-                `${backendUrl}/api/questions/${questionId}/answer`,
+                `${API_BASE_URL}/api/questions/${questionId}/answer`,
                 { answer: replyText },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
@@ -106,7 +107,7 @@ const QASection = ({ courseId, lectureId, chapterId }) => {
         try {
             const token = await getToken();
             const { data } = await axios.patch(
-                `${backendUrl}/api/questions/${questionId}/resolve`,
+                `${API_BASE_URL}/api/questions/${questionId}/resolve`,
                 {},
                 { headers: { Authorization: `Bearer ${token}` } }
             );

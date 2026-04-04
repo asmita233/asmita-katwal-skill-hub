@@ -2,9 +2,10 @@ import React, { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../../context/AppContext';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import API_BASE_URL from '../../utils/api';
 
 const EducatorReviews = () => {
-    const { backendUrl, getToken } = useContext(AppContext);
+    const { getToken } = useContext(AppContext);
     const [courses, setCourses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedCourse, setSelectedCourse] = useState('all');
@@ -18,7 +19,7 @@ const EducatorReviews = () => {
     const fetchCoursesWithReviews = async () => {
         try {
             const token = await getToken();
-            const { data } = await axios.get(backendUrl + '/api/courses/educator/my-courses', {
+            const { data } = await axios.get(`${API_BASE_URL}/api/courses/educator/my-courses`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (data.success) {

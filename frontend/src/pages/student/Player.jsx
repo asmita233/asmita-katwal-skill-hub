@@ -8,13 +8,14 @@ import QASection from '../../components/students/QASection';
 import { Line } from 'rc-progress';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import API_BASE_URL from '../../utils/api';
 
 const Player = () => {
   // Get courseId from the URL to fetch specific course content
   const { courseId } = useParams();
 
   // Extract shared state and persistence methods from the context
-  const { navigate, backendUrl, getToken, enrolledCourses, fetchEnrolledCourses, user } = useContext(AppContext);
+  const { navigate, getToken, enrolledCourses, fetchEnrolledCourses, user } = useContext(AppContext);
 
   // --- Component State Management ---
   const [courseData, setCourseData] = useState(null); // Full course structure and metadata
@@ -91,7 +92,7 @@ const Player = () => {
   const getCourseData = async () => {
     try {
       const token = await getToken();
-      const { data } = await axios.get(backendUrl + '/api/courses/' + courseId, {
+      const { data } = await axios.get(`${API_BASE_URL}/api/courses/${courseId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (data.success) {
@@ -205,7 +206,7 @@ const Player = () => {
 
     try {
       const token = await getToken();
-      const { data } = await axios.post(backendUrl + '/api/user/update-progress', {
+      const { data } = await axios.post(`${API_BASE_URL}/api/user/update-progress`, {
         courseId,
         lectureId
       }, {
@@ -253,7 +254,7 @@ const Player = () => {
       setCertificateLoading(true);
       const token = await getToken();
       const { data } = await axios.post(
-        backendUrl + '/api/certificates/generate',
+        `${API_BASE_URL}/api/certificates/generate`,
         { courseId },
         { headers: { Authorization: `Bearer ${token}` } }
       );

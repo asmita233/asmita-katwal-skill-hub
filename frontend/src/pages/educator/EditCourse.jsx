@@ -4,10 +4,11 @@ import { AppContext } from '../../context/AppContext';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import uniqid from 'uniqid';
+import API_BASE_URL from '../../utils/api';
 
 const EditCourse = () => {
   const { id } = useParams();
-  const { backendUrl, getToken, navigate, currency } = useContext(AppContext);
+  const { getToken, navigate, currency } = useContext(AppContext);
 
   // Course data
   const [course, setCourse] = useState(null);
@@ -57,7 +58,7 @@ const EditCourse = () => {
   const fetchCourse = useCallback(async () => {
     try {
       const token = await getToken();
-      const { data } = await axios.get(`${backendUrl}/api/courses/${id}`, {
+      const { data } = await axios.get(`${API_BASE_URL}/api/courses/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (data.success) {
@@ -74,7 +75,7 @@ const EditCourse = () => {
     } finally {
       setLoading(false);
     }
-  }, [id, backendUrl, getToken, navigate]);
+  }, [id, getToken, navigate]);
 
   useEffect(() => {
     fetchCourse();
@@ -88,7 +89,7 @@ const EditCourse = () => {
     try {
       const token = await getToken();
       const { data } = await axios.put(
-        `${backendUrl}/api/courses/${id}/content`,
+        `${API_BASE_URL}/api/courses/${id}/content`,
         { courseContent: updatedSections || sections },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -248,7 +249,7 @@ const EditCourse = () => {
         formData.append('video', lectureVideo);
 
         const { data } = await axios.post(
-          `${backendUrl}/api/courses/upload-video`,
+          `${API_BASE_URL}/api/courses/upload-video`,
           formData,
           {
             headers: {
@@ -288,7 +289,7 @@ const EditCourse = () => {
         formData.append('pdf', lecturePdf);
 
         const { data } = await axios.post(
-          `${backendUrl}/api/courses/upload-pdf`,
+          `${API_BASE_URL}/api/courses/upload-pdf`,
           formData,
           {
             headers: {

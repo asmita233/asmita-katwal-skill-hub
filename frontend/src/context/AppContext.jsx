@@ -4,6 +4,7 @@ import { useUser, useAuth } from "@clerk/clerk-react";
 import humanizeDuration from "humanize-duration";
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import API_BASE_URL from '../utils/api';
 
 // Create a context for global application state
 export const AppContext = createContext();
@@ -11,14 +12,6 @@ export const AppContext = createContext();
 export const AppContextProvider = (props) => {
     // Basic configurations from environment variables or defaults
     const currency = import.meta.env.VITE_CURRENCY || "$";
-    const rawBackendUrl = import.meta.env.VITE_BACKEND_URL?.trim();
-    const isLocalBackendUrl = (url) => /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/?$/i.test(url);
-    const fallbackBackendUrl = import.meta.env.DEV
-        ? 'http://127.0.0.1:5000'
-        : 'https://edemy-backend.vercel.app';
-    const backendUrl = rawBackendUrl && !isLocalBackendUrl(rawBackendUrl)
-        ? rawBackendUrl
-        : fallbackBackendUrl;
 
     // Hooks for programmatic navigation and Clerk authentication
     const navigate = useNavigate();
@@ -63,7 +56,7 @@ export const AppContextProvider = (props) => {
     // Fetch all courses from the backend API
     const fetchAllCourses = async () => {
         try {
-            const { data } = await axios.get(backendUrl + '/api/courses');
+            const { data } = await axios.get(`${API_BASE_URL}/api/courses`);
             if (data.success) {
                 setAllCourses(data.courses);
             } else {
@@ -129,7 +122,7 @@ export const AppContextProvider = (props) => {
     const fetchEnrolledCourses = async () => {
         try {
             const token = await getToken(); // Get auth token from Clerk
-            const { data } = await axios.get(backendUrl + '/api/user/enrolled-courses', {
+            const { data } = await axios.get(`${API_BASE_URL}/api/user/enrolled-courses`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (data.success) {
@@ -150,7 +143,7 @@ export const AppContextProvider = (props) => {
         try {
             setUserDataLoading(true);
             const token = await getToken();
-            const { data } = await axios.get(backendUrl + '/api/user/me', {
+            const { data } = await axios.get(`${API_BASE_URL}/api/user/me`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (data.success && data.user) {
@@ -175,7 +168,7 @@ export const AppContextProvider = (props) => {
     const becomeEducator = async () => {
         try {
             const token = await getToken();
-            const { data } = await axios.post(backendUrl + '/api/user/become-educator', {}, {
+            const { data } = await axios.post(`${API_BASE_URL}/api/user/become-educator`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (data.success) {
@@ -218,7 +211,6 @@ export const AppContextProvider = (props) => {
     // Provide all state and functions to the rest of the application
     const value = {
         currency,
-        backendUrl,
         allCourses,
         setAllCourses,
         navigate,

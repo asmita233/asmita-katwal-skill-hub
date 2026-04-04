@@ -5,10 +5,11 @@ import { toast } from 'react-toastify';
 import Footer from '../../components/students/Footer';
 import html2canvas from 'html2canvas'; // Captures HTML elements as canvas images
 import jsPDF from 'jspdf'; // Generates PDF documents from images/text
+import API_BASE_URL from '../../utils/api';
 
 const Certificates = () => {
     // Access global state and navigation helpers
-    const { backendUrl, getToken, navigate, user } = useContext(AppContext);
+    const { getToken, navigate, user } = useContext(AppContext);
 
     // UI State Management
     const [certificates, setCertificates] = useState([]); // List of earned certificates
@@ -25,7 +26,7 @@ const Certificates = () => {
     const fetchCertificates = async () => {
         try {
             const token = await getToken();
-            const { data } = await axios.get(backendUrl + '/api/certificates/my-certificates', {
+            const { data } = await axios.get(`${API_BASE_URL}/api/certificates/my-certificates`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (data.success) {

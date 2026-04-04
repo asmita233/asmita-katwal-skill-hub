@@ -4,9 +4,10 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import Footer from '../../components/students/Footer';
 import { Line } from 'rc-progress';
+import API_BASE_URL from '../../utils/api';
 
 const StudentDashboard = () => {
-    const { backendUrl, getToken, navigate, user, enrolledCourses } = useContext(AppContext);
+    const { getToken, navigate, user, enrolledCourses } = useContext(AppContext);
     const [certificates, setCertificates] = useState([]);
     const [wishlistCount, setWishlistCount] = useState(0);
     const [loading, setLoading] = useState(true);
@@ -20,13 +21,13 @@ const StudentDashboard = () => {
         try {
             const token = await getToken();
             // Fetch certificates
-            const certRes = await axios.get(backendUrl + '/api/certificates/my-certificates', {
+            const certRes = await axios.get(`${API_BASE_URL}/api/certificates/my-certificates`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (certRes.data.success) setCertificates(certRes.data.certificates);
 
             // Fetch wishlist count
-            const wishRes = await axios.get(backendUrl + '/api/user/wishlist', {
+            const wishRes = await axios.get(`${API_BASE_URL}/api/user/wishlist`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (wishRes.data.success) setWishlistCount(wishRes.data.wishlist.length);

@@ -3,10 +3,11 @@ import { AppContext } from '../../context/AppContext';
 import { assets } from '../../assets/assets';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import API_BASE_URL from '../../utils/api';
 
 const Dashboard = () => {
   // Shared currency configuration and authentication helper from context
-  const { currency, backendUrl, getToken } = useContext(AppContext);
+  const { currency, getToken } = useContext(AppContext);
 
   // Local state for dashboard metrics (total earnings, student count, courses)
   const [dashboardData, setDashboardData] = useState(null);
@@ -19,7 +20,7 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     try {
       const token = await getToken();
-      const { data } = await axios.get(backendUrl + '/api/courses/educator/dashboard', {
+      const { data } = await axios.get(`${API_BASE_URL}/api/courses/educator/dashboard`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (data.success) {

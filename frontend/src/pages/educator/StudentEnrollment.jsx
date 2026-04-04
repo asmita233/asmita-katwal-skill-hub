@@ -3,9 +3,10 @@ import { AppContext } from '../../context/AppContext';
 import { assets } from '../../assets/assets';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import API_BASE_URL from '../../utils/api';
 
 const StudentEnrollment = () => {
-  const { backendUrl, getToken, currency } = useContext(AppContext);
+  const { getToken, currency } = useContext(AppContext);
   const [enrolledStudents, setEnrolledStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -13,7 +14,7 @@ const StudentEnrollment = () => {
   const fetchEnrolledStudents = async () => {
     try {
       const token = await getToken();
-      const { data } = await axios.get(backendUrl + '/api/courses/educator/students', {
+      const { data } = await axios.get(`${API_BASE_URL}/api/courses/educator/students`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (data.success) {
