@@ -6,7 +6,13 @@ import Enrollment from '../models/Enrollment.js';
 import { sendEnrollmentEmail, sendPaymentSuccessEmail } from '../utils/emailService.js';
 import { syncUserFromClerk } from '../utils/userUtils.js';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const getStripe = () => {
+    if (!process.env.STRIPE_SECRET_KEY) {
+        throw new Error('Missing STRIPE_SECRET_KEY');
+    }
+
+    return new Stripe(process.env.STRIPE_SECRET_KEY);
+};
 
 // CREATE STRIPE CHECKOUT SESSION:
 // This function is triggered when a student clicks Buy Course.
@@ -14,6 +20,7 @@ export const createCheckoutSession = async (req, res) => {
     try {
         const userId = req.auth?.userId;
         const { courseId } = req.body;
+        const stripe = getStripe();
 
         // Verify that the user exists in our database
         let user = await User.findById(userId);
@@ -113,6 +120,7 @@ export const createCheckoutSession = async (req, res) => {
 export const verifyPayment = async (req, res) => {
     try {
         const { sessionId } = req.body;
+        const stripe = getStripe();
 
         // Retrieve session from Stripe
         const session = await stripe.checkout.sessions.retrieve(sessionId);
@@ -193,6 +201,7 @@ export const stripeWebhook = async (req, res) => {
     let event;
 
     try {
+        const stripe = getStripe();
         // Verification step: Ensure the request is authentic
         event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
     } catch (err) {

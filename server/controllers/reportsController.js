@@ -3,7 +3,13 @@ import Course from '../models/Course.js';
 import User from '../models/User.js';
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const getStripe = () => {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    throw new Error('Missing STRIPE_SECRET_KEY');
+  }
+
+  return new Stripe(process.env.STRIPE_SECRET_KEY);
+};
 
 /**
  * S3-T01: Enrollment System API
@@ -74,6 +80,7 @@ export const processPayment = async (req, res) => {
 
     const discountedPrice = course.coursePrice - (course.discount * course.coursePrice) / 100;
 
+    const stripe = getStripe();
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [{
