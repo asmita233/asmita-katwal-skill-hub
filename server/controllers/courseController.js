@@ -20,7 +20,7 @@ export const getAllCourses = async (req, res) => {
             limit = 12
         } = req.query;
 
-       
+
         // Build query
         const query = {};
 
@@ -147,7 +147,7 @@ export const createCourse = async (req, res) => {
             console.log('User not found in DB during course creation, syncing from Clerk:', userId);
             existingUser = await syncUserFromClerk(userId);
         }
-        
+
         if (!existingUser) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }

@@ -132,6 +132,24 @@ const Navbar = () => {
                     </div>
                     My Profile
                   </Link>
+
+                  {/* Link to Educator Dashboard (If applicable) */}
+                  {isEducator && (
+                    <>
+                      <div className="border-t border-gray-100 my-1"></div>
+                      <Link
+                        to="/educator"
+                        className="flex items-center gap-3 px-5 py-3 hover:bg-purple-50 group/educator transition"
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-purple-50 group-hover/educator:bg-purple-100 flex items-center justify-center text-purple-600">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                          </svg>
+                        </div>
+                        <span className="font-bold text-purple-700">Educator View</span>
+                      </Link>
+                    </>
+                  )}
                 </div>
               </div>
             </>

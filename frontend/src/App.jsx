@@ -20,7 +20,7 @@ import EditCourse from './pages/educator/EditCourse'
 import EducatorQA from './pages/educator/EducatorQA'
 import EducatorReviews from './pages/educator/EducatorReviews'
 import Navbar from './components/students/Navbar'
-import ProtectedEducatorRoute from './components/ProtectedEducatorRoute'
+// ProtectedEducatorRoute removed — Educator.jsx handles its own role gating
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import { useUser } from '@clerk/clerk-react'
@@ -86,11 +86,7 @@ const App = () => {
         <Route path='/certificates' element={user ? <Certificates /> : <Navigate to="/" />} />
         <Route path='/profile' element={user ? <Profile /> : <Navigate to="/" />} />
 
-        <Route path='/educator' element={
-          <ProtectedEducatorRoute>
-            <Educator />
-          </ProtectedEducatorRoute>
-        }>
+        <Route path='/educator' element={<Educator />}>
           <Route index element={<Dashboard />} />
           <Route path='add-course' element={<AddCourses />} />
           <Route path='edit-course/:id' element={<EditCourse />} />

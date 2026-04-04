@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { assets } from '../../assets/assets';
 import { Link } from 'react-router-dom';
+import { AppContext } from '../../context/AppContext';
 
 /**
  * CallToAction Component: A high-conversion footer banner used to capture user interest 
  * near the end of the page scrolling experience.
  */
 const CallToAction = () => {
+  const { navigate } = useContext(AppContext);
   return (
     <div className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 py-16 px-8">
       <div className="max-w-4xl mx-auto text-center">
@@ -22,12 +24,15 @@ const CallToAction = () => {
 
         {/* --- Action Buttons --- */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Link
-            to="/course-list"
+          <button
+            onClick={() => {
+              sessionStorage.setItem('preferredRole', 'student');
+              navigate('/course-list');
+            }}
             className="px-8 py-3 bg-white text-blue-600 rounded-lg font-medium hover:bg-gray-100 transition shadow-lg"
           >
             Get started
-          </Link>
+          </button>
           <Link
             to="/course-list"
             className="px-8 py-3 text-white border border-white/30 rounded-lg font-medium hover:bg-white/10 transition flex items-center gap-2"

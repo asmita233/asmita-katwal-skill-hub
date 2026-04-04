@@ -124,11 +124,23 @@ const Certificates = () => {
             <div className="min-h-screen bg-gray-50 py-8 px-4 md:px-8 lg:px-16">
                 <div className="max-w-7xl mx-auto">
                     {/* Visual Header */}
-                    <div className="mb-8">
-                        <h1 className="text-3xl font-bold text-gray-800 mb-2">My Certificates</h1>
-                        <p className="text-gray-600">
-                            {certificates ? certificates.length : 0} {certificates?.length === 1 ? 'certificate' : 'certificates'} earned
-                        </p>
+                    <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+                        <div>
+                            <h1 className="text-3xl font-bold text-gray-800 mb-2">My Certificates</h1>
+                            <p className="text-gray-600">
+                                {certificates ? certificates.length : 0} {certificates?.length === 1 ? 'certificate' : 'certificates'} earned
+                            </p>
+                        </div>
+                        <button
+                            onClick={fetchCertificates}
+                            disabled={loading}
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm disabled:opacity-50"
+                        >
+                            <svg className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                            Sync Progress
+                        </button>
                     </div>
 
                     {/* Dashboard Grid for Certificates */}

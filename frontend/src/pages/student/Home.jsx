@@ -12,14 +12,16 @@ const Home = () => {
   // Use context for navigation
   const { navigate } = React.useContext(AppContext);
 
-  // Effect hook to check if the user intended to go to the educator dashboard 
+  // Effect hook to check if the user intended to go to a specific dashboard 
   // before being redirected to Home (e.g., after logging in)
   React.useEffect(() => {
     const preferredRole = sessionStorage.getItem('preferredRole');
     if (preferredRole === 'educator') {
-      // Clear the session storage flag and redirect to the educator dashboard
       sessionStorage.removeItem('preferredRole');
       navigate('/educator');
+    } else if (preferredRole === 'student') {
+      sessionStorage.removeItem('preferredRole');
+      navigate('/dashboard');
     }
   }, [navigate]);
 

@@ -156,9 +156,9 @@ export const AppContextProvider = (props) => {
                 setIsEducator(data.user.role === 'educator');
             } else {
                 if (data.success && !data.user) {
-                   console.log("User found in Clerk but not in DB yet");
+                    console.log("User found in Clerk but not in DB yet");
                 } else {
-                   toast.error(data.message);
+                    toast.error(data.message);
                 }
             }
         } catch (error) {
@@ -194,10 +194,6 @@ export const AppContextProvider = (props) => {
         fetchAllCourses();
     }, []);
 
-    // Helper to log the Clerk token for debugging purposes
-    const logToken = async () => {
-        console.log("Clerk Token for debugging:", await getToken());
-    }
 
     // React to user login: Fetch user-specific data when the Clerk user is available
     useEffect(() => {
@@ -212,7 +208,6 @@ export const AppContextProvider = (props) => {
             return;
         }
 
-        logToken();
         fetchUserData();
         fetchEnrolledCourses();
     }, [user, isLoaded]);

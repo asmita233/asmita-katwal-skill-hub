@@ -105,7 +105,7 @@ export const generateCertificate = async (req, res) => {
     }
 };
 
-// Get user's certificates
+// Get user's certificates (with auto-generation for completed courses)
 export const getUserCertificates = async (req, res) => {
     try {
         const userId = req.auth?.userId;
@@ -117,6 +117,55 @@ export const getUserCertificates = async (req, res) => {
             });
         }
 
+        // Fetch the user with their course progress
+        let user = await User.findById(userId).populate('enrolledCourses.courseId');
+        if (!user) {
+            user = await syncUserFromClerk(userId);
+            if (user) {
+                user = await User.findById(userId).populate('enrolledCourses.courseId');
+            }
+        }
+
+        if (user && user.enrolledCourses?.length > 0) {
+            // Check for potential new certificates to generate
+            for (const enrolled of user.enrolledCourses) {
+                const course = enrolled.courseId;
+                if (!course) continue;
+
+                // Calculate current completion
+                let totalLectures = 0;
+                course.courseContent?.forEach(chapter => {
+                    totalLectures += chapter.chapterContent?.length || 0;
+                });
+
+                const completedCount = enrolled.progress?.completedLectures?.length || 0;
+                const progress = totalLectures > 0 ? Math.round((completedCount / totalLectures) * 100) : 0;
+
+                // If 100% done, check if certificate exists
+                if (progress >= 100) {
+                    const exists = await Certificate.findOne({ userId, courseId: course._id });
+                    if (!exists) {
+                        try {
+                            const certificateId = `CERT-${uuidv4().split('-')[0].toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
+                            const newCert = new Certificate({
+                                userId,
+                                courseId: course._id,
+                                userName: user.name,
+                                courseTitle: course.courseTitle,
+                                certificateId,
+                                completionDate: new Date(),
+                            });
+                            await newCert.save();
+                            console.log(`Auto-generated certificate for user ${userId} / course ${course.courseTitle}`);
+                        } catch (err) {
+                            console.error('Failed to auto-generate certificate during fetch:', err.message);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Now return the full list of certificates
         const certificates = await Certificate.find({ userId })
             .populate('courseId', 'courseTitle courseThumbnail')
             .sort({ completionDate: -1 });
