@@ -15,6 +15,7 @@ import certificateRoutes from './routes/certificateRoutes.js';
 import reportsRoutes from './routes/reportsRoutes.js';
 
 const app = express(); // Initialize the Express application
+const isVercelDeployment = Boolean(process.env.VERCEL);
 
 // Initializing Media storage connection
 connectCloudinary();
@@ -31,6 +32,7 @@ app.post(
 app.use(cors({
   origin: [
     process.env.FRONTEND_URL,
+    'https://edemylmss-frontend.vercel.app',
     'http://localhost:5173',
     'http://localhost:5174',
     'http://localhost:3000'
@@ -96,7 +98,15 @@ const startServer = async () => {
   });
 };
 
-startServer().catch((error) => {
-  console.error('Failed to start server:', error.message);
-  process.exit(1);
-});
+if (isVercelDeployment) {
+  connectDB().catch((error) => {
+    console.error('Failed to initialize Vercel backend:', error.message);
+  });
+} else {
+  startServer().catch((error) => {
+    console.error('Failed to start server:', error.message);
+    process.exit(1);
+  });
+}
+
+export default app;
