@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
-const connectDB = require("./config/mongodb");   // ← Changed to mongodb.js
+const connectDB = require("./configs/mongodb");   // ← Fixed: "configs" with 's'
 
 dotenv.config();
 
@@ -11,7 +11,7 @@ const app = express();
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
-// CORS - Fixed for Render
+// CORS for Render + Local
 const allowedOrigins = [
   "https://asmita-katwal-skill-hub-fontend.onrender.com",
   "http://localhost:5173",
@@ -38,35 +38,26 @@ app.use("/api/courses", require("./routes/courses"));
 app.use("/api/enrollments", require("./routes/enrollments"));
 app.use("/api/reviews", require("./routes/reviews"));
 
-// Add any other routes you have here
-// Example: app.use("/api/payments", require("./routes/payments"));
-
-// Health check route
+// Health check
 app.get("/", (req, res) => {
   res.json({
     success: true,
     message: "Skill Hub Backend API is running",
     version: "1.0.0",
     frontend: process.env.FRONTEND_URL || "not set",
-    environment: process.env.NODE_ENV || "development"
+    env: process.env.NODE_ENV || "development"
   });
 });
 
 // 404 handler
 app.use((req, res) => {
-  res.status(404).json({ 
-    success: false, 
-    message: "Route not found" 
-  });
+  res.status(404).json({ success: false, message: "Route not found" });
 });
 
-// Global error handler
+// Error handler
 app.use((err, req, res, next) => {
   console.error("Server Error:", err.stack);
-  res.status(500).json({
-    success: false,
-    message: err.message || "Internal Server Error"
-  });
+  res.status(500).json({ success: false, message: err.message || "Internal Server Error" });
 });
 
 // ====================== START SERVER ======================
@@ -74,14 +65,13 @@ const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
   try {
-    await connectDB();           // Connect to MongoDB
+    await connectDB();
     app.listen(PORT, () => {
-      console.log(`🚀 Server is running on port ${PORT}`);
+      console.log(`🚀 Server running on port ${PORT}`);
       console.log(`✅ Allowed Frontend: ${process.env.FRONTEND_URL}`);
-      console.log(`✅ Environment: ${process.env.NODE_ENV}`);
     });
   } catch (error) {
-    console.error("❌ Failed to start server:", error);
+    console.error("❌ Failed to start server:", error.message);
     process.exit(1);
   }
 };
