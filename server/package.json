@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Edemy LMS Backend API",
   "main": "server.js",
-  "type": "module",
+  "type": "commonjs",
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js"
