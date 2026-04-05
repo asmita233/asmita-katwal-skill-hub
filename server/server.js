@@ -22,6 +22,8 @@ app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 // CORS
 const allowedOrigins = [
   frontendUrl,
+  "https://asmita-edemy.vercel.app",
+  "https://asmita-katwal-skill-hub.vercel.app",
   "http://localhost:5173",
   "http://127.0.0.1:5173"
 ];

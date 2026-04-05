@@ -53,10 +53,11 @@ const verifyClerkWebhook = async (req, res, next) => {
     try {
         const { Webhook } = require('svix');
 
-        const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
+        const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET || process.env.CLERK_WEBHOOK_KEY || process.env.CLERK_WEBHOOK_URL;
 
         if (!WEBHOOK_SECRET) {
-            throw new Error('Missing CLERK_WEBHOOK_SECRET');
+            console.error('Webhook Error: Missing CLERK_WEBHOOK_SECRET or KEY');
+            throw new Error('Missing clerk secret');
         }
 
         const headers = {

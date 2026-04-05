@@ -36,8 +36,8 @@ const StudentEnrollment = () => {
 
   const filteredStudents = enrolledStudents.filter(
     (item) =>
-      item.student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.courseTitle.toLowerCase().includes(searchTerm.toLowerCase())
+      item.student?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.courseTitle?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (loading) {
@@ -96,9 +96,12 @@ const StudentEnrollment = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-3">
                       <img
-                        src={item.student.imageUrl}
+                        src={item.student?.imageUrl || assets.profile_img}
                         alt={item.student.name}
                         className="w-8 h-8 rounded-full object-cover"
+                        onError={(event) => {
+                          event.currentTarget.src = assets.profile_img;
+                        }}
                       />
                       <span className="text-sm font-medium text-gray-800">
                         {item.student.name}

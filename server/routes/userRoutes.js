@@ -13,8 +13,10 @@ const {
 
 const router = express.Router();
 
-// Clerk webhook - no auth required
-router.post('/webhook', clerkWebhook);
+const { verifyClerkWebhook } = require('../middlewares/authMiddleware');
+
+// Clerk webhook - with security verification
+router.post('/webhook', verifyClerkWebhook, clerkWebhook);
 
 // Protected routes - require authentication
 router.get('/me', requireAuth(), getUserData);

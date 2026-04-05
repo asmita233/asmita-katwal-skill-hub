@@ -203,16 +203,24 @@ const Navbar = () => {
         </div>
 
         {/* Mobile Menu - Only visible on small screens */}
-        <div className="md:hidden flex items-center gap-4">
+        <div className="md:hidden flex items-center gap-3">
           {user ? (
             <UserButton afterSignOutUrl="/" />
           ) : (
-            <button
-              onClick={() => openSignUp()}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition"
-            >
-              Sign Up
-            </button>
+            <>
+              <button
+                onClick={() => openSignIn()}
+                className="text-gray-700 hover:text-blue-600 text-sm font-medium transition"
+              >
+                Log In
+              </button>
+              <button
+                onClick={() => openSignUp()}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition"
+              >
+                Sign Up
+              </button>
+            </>
           )}
         </div>
       </div>

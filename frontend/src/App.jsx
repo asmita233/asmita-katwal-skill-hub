@@ -31,7 +31,6 @@ const App = () => {
 
   const isLandingPage = location.pathname === '/' && !user
   const hideNavbar =
-    isLandingPage ||
     location.pathname.startsWith('/educator') ||
     location.pathname.startsWith('/player')
 
