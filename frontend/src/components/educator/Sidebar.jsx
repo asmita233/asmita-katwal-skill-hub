@@ -112,19 +112,8 @@ const Sidebar = () => {
         })}
       </nav>
 
-      {/* Sidebar Bottom Action: Switching back to student view */}
+      {/* Sidebar Bottom Action: Version Info */}
       <div className="p-6 mt-auto">
-        <div className="bg-gray-50/80 rounded-[30px] p-2">
-          <button
-            onClick={() => navigate('/')}
-            className="w-full h-14 flex items-center justify-center gap-3 bg-white text-gray-900 rounded-[24px] font-bold text-sm shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all group"
-          >
-            <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:rotate-12 transition-transform">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>
-            </div>
-            Switch to Student
-          </button>
-        </div>
         {/* Version Info Placeholder */}
         <p className="text-center text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-6 opacity-50">Skill Hub v1.0</p>
       </div>
