@@ -24,6 +24,7 @@ const allowedOrigins = [
   frontendUrl,
   "https://asmita-edemy.vercel.app",
   "https://asmita-katwal-skill-hub.vercel.app",
+  "https://asmita-katwal-skill-hub-fontend.onrender.com",
   "http://localhost:5173",
   "http://127.0.0.1:5173"
 ];
