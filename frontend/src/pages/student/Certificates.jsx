@@ -9,7 +9,7 @@ import API_BASE_URL from '../../utils/api';
 
 const Certificates = () => {
     // Access global state and navigation helpers
-    const { getToken, navigate, user } = useContext(AppContext);
+    const { getToken, navigate, user, isEducator } = useContext(AppContext);
 
     // UI State Management
     const [certificates, setCertificates] = useState([]); // List of earned certificates
@@ -46,11 +46,15 @@ const Certificates = () => {
     // Load data only when a valid user session is detected
     useEffect(() => {
         if (user) {
+            if (isEducator) {
+                navigate('/educator');
+                return;
+            }
             fetchCertificates();
         } else {
             setLoading(false);
         }
-    }, [user]);
+    }, [user, isEducator]);
 
     /**
      * 

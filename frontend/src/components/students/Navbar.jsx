@@ -79,7 +79,7 @@ const Navbar = () => {
 
                 {/* Dropdown Menu contents */}
                 <div className={`absolute top-full right-0 mt-1 w-56 bg-white rounded-xl shadow-2xl border border-gray-100 py-3 z-50 transition-all duration-200 ${showDropdown ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'}`}>
-                  {/* Link to Educator Dashboard (if applicable) */}
+                  {/* Role-specific Dashboard Link */}
                   {isEducator ? (
                     <Link
                       to="/educator"
@@ -92,12 +92,7 @@ const Navbar = () => {
                       </div>
                       Educator Panel
                     </Link>
-                  ) : null}
-
-                  {/* Link to Student Dashboard - Only if not strictly teacher? 
-                      Actually let's show student links for everyone for now, but focus on the choice.
-                  */}
-                  {!isEducator && (
+                  ) : (
                     <Link
                       to="/dashboard"
                       className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition"
@@ -110,42 +105,45 @@ const Navbar = () => {
                       Student Dashboard
                     </Link>
                   )}
-                  {/* Link to Enrolled Courses */}
-                  <Link
-                    to="/my-enrollments"
-                    className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center text-green-600">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-                      </svg>
-                    </div>
-                    My Enrollments
-                  </Link>
-                  {/* Link to Wishlist */}
-                  <Link
-                    to="/wishlist"
-                    className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-pink-50 flex items-center justify-center text-pink-600">
-                      <svg className="w-4 h-4" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
-                      </svg>
-                    </div>
-                    Wishlist
-                  </Link>
-                  {/* Link to Certificates */}
-                  <Link
-                    to="/certificates"
-                    className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
-                      </svg>
-                    </div>
-                    Certificates
-                  </Link>
+
+                  {/* Student-only Links - Hidden for Educators */}
+                  {!isEducator && (
+                    <>
+                      <Link
+                        to="/my-enrollments"
+                        className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition"
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center text-green-600">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                          </svg>
+                        </div>
+                        My Enrollments
+                      </Link>
+                      <Link
+                        to="/wishlist"
+                        className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition"
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-pink-50 flex items-center justify-center text-pink-600">
+                          <svg className="w-4 h-4" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                          </svg>
+                        </div>
+                        Wishlist
+                      </Link>
+                      <Link
+                        to="/certificates"
+                        className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition"
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
+                          </svg>
+                        </div>
+                        Certificates
+                      </Link>
+                    </>
+                  )}
                   {/* Divider */}
                   <div className="border-t border-gray-100 my-1"></div>
                   {/* Link to Profile */}

@@ -7,7 +7,7 @@ import { Line } from 'rc-progress';
 import API_BASE_URL from '../../utils/api';
 
 const StudentDashboard = () => {
-    const { getToken, navigate, user, enrolledCourses } = useContext(AppContext);
+    const { getToken, navigate, user, enrolledCourses, isEducator } = useContext(AppContext);
     const [certificates, setCertificates] = useState([]);
     const [wishlistCount, setWishlistCount] = useState(0);
     const [loading, setLoading] = useState(true);
@@ -39,9 +39,15 @@ const StudentDashboard = () => {
     };
 
     useEffect(() => {
-        if (user) fetchDashboardData();
+        if (user) {
+            if (isEducator) {
+                navigate('/educator');
+                return;
+            }
+            fetchDashboardData();
+        }
         else setLoading(false);
-    }, [user]);
+    }, [user, isEducator]);
 
     const calculateProgress = (enrollment) => {
         if (!enrollment?.courseId?.courseContent) return 0;

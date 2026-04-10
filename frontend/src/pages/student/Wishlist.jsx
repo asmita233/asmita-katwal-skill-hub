@@ -7,7 +7,7 @@ import { assets } from '../../assets/assets';
 import API_BASE_URL from '../../utils/api';
 
 const Wishlist = () => {
-    const { getToken, navigate, user, currency, calculateRating, enrolledCourses } = useContext(AppContext);
+    const { getToken, navigate, user, currency, calculateRating, enrolledCourses, isEducator } = useContext(AppContext);
     const [wishlist, setWishlist] = useState([]);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState({});
@@ -100,11 +100,15 @@ const Wishlist = () => {
 
     useEffect(() => {
         if (user) {
+            if (isEducator) {
+                navigate('/educator');
+                return;
+            }
             fetchWishlist();
         } else {
             setLoading(false);
         }
-    }, [user]);
+    }, [user, isEducator]);
 
     if (!user) {
         return (

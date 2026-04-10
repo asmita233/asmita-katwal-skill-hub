@@ -16,7 +16,7 @@ const MyEnrollment = () => {
     calculateRating,
     user,
     enrolledCourses,
-    calculateCourseDuration,
+    isEducator,
     calculateNoOfLectures
   } = useContext(AppContext);
 
@@ -54,6 +54,13 @@ const MyEnrollment = () => {
     }
   };
 
+  // Redirect Educators away from this student-only page
+  useEffect(() => {
+    if (user && isEducator) {
+      navigate('/educator');
+    }
+  }, [user, isEducator, navigate]);
+
   // Redirect or show message if user isn't authenticated
   if (!user) {
     return (
@@ -70,6 +77,9 @@ const MyEnrollment = () => {
       </div>
     );
   }
+
+  // If role is educator, we'll return null while the useEffect handle the redirect
+  if (isEducator) return null;
 
   return (
     <>
