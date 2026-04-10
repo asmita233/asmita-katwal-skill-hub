@@ -7,7 +7,7 @@ import RoleSelectionModal from './RoleSelectionModal';
 
 const Navbar = () => {
   // Extracting navigation and educator status from global context
-  const { navigate, isEducator, theme, toggleTheme } = useContext(AppContext);
+  const { navigate, isEducator, theme, toggleTheme, userDataLoading } = useContext(AppContext);
   // Get current path for potential active state styling
   const location = useLocation();
   // Clerk hooks for controlling authentication modals

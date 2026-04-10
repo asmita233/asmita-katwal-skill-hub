@@ -17,6 +17,7 @@ const MyEnrollment = () => {
     user,
     enrolledCourses,
     isEducator,
+    calculateCourseDuration,
     calculateNoOfLectures
   } = useContext(AppContext);
 
