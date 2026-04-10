@@ -10,20 +10,26 @@ import { AppContext } from '../../context/AppContext'
 
 const Home = () => {
   // Use context for navigation
-  const { navigate } = React.useContext(AppContext);
+  const { navigate, becomeEducator, userData } = React.useContext(AppContext);
 
   // Effect hook to check if the user intended to go to a specific dashboard 
   // before being redirected to Home (e.g., after logging in)
   React.useEffect(() => {
     const preferredRole = sessionStorage.getItem('preferredRole');
+    
     if (preferredRole === 'educator') {
       sessionStorage.removeItem('preferredRole');
-      navigate('/educator');
+      // If user is already logged in but not an educator, trigger the becomeEducator switch
+      if (userData && userData.role !== 'educator') {
+        becomeEducator();
+      } else {
+        navigate('/educator');
+      }
     } else if (preferredRole === 'student') {
       sessionStorage.removeItem('preferredRole');
       navigate('/dashboard');
     }
-  }, [navigate]);
+  }, [navigate, becomeEducator, userData]);
 
   return (
     <div className='flex flex-col items-center space-y-7 text-center'>

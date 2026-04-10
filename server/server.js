@@ -15,7 +15,7 @@ console.log("Node Environment:", process.env.NODE_ENV || "development");
 console.log("Frontend URL:", frontendUrl);
 console.log("MongoDB URI Set:", Boolean(process.env.MONGODB_URI));
 
-// ====================== MIDDLEWARE ======================
+//middlewares
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
@@ -42,7 +42,7 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
 }));
 
-// ====================== ROUTES ======================
+//all the routs
 app.use("/api/user", require("./routes/userRoutes"));
 app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/courses", require("./routes/courseRoutes"));
@@ -72,7 +72,7 @@ app.use((err, req, res, next) => {
   res.status(500).json({ success: false, message: err.message || "Internal Server Error" });
 });
 
-// ====================== START SERVER ======================
+//start server
 const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
@@ -81,14 +81,19 @@ const startServer = async () => {
     await connectDB();
 
     app.listen(PORT, () => {
-      console.log(`✅ Server running on port ${PORT}`);
-      console.log(`✅ Allowed Frontend: ${frontendUrl}`);
-      console.log(`✅ Routes mounted successfully`);
+      console.log(`Server running on port ${PORT}`);
+      console.log(`Allowed Frontend: ${frontendUrl}`);
+      console.log(` Routes mounted successfully`);
     });
   } catch (error) {
-    console.error("❌ Failed to start server:", error.message);
+    console.error(" Failed to start server:", error.message);
     process.exit(1);
   }
 };
 
-startServer();
+module.exports = app;
+
+// Only start the server when this file is run directly (not imported by tests)
+if (require.main === module) {
+  startServer();
+}

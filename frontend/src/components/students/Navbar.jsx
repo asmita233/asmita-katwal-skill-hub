@@ -3,6 +3,7 @@ import { assets } from '../../assets/assets';
 import { Link, useLocation } from 'react-router-dom';
 import { useClerk, UserButton, useUser } from '@clerk/clerk-react';
 import { AppContext } from '../../context/AppContext';
+import RoleSelectionModal from './RoleSelectionModal';
 
 const Navbar = () => {
   // Extracting navigation and educator status from global context
@@ -15,6 +16,14 @@ const Navbar = () => {
   const { user } = useUser();
   // State for toggling the 'My Learning' dropdown on desktop
   const [showDropdown, setShowDropdown] = useState(false);
+  // State for Role Selection Modal
+  const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
+
+  const handleRoleSelection = (role) => {
+    sessionStorage.setItem('preferredRole', role);
+    setIsRoleModalOpen(false);
+    openSignUp();
+  };
 
   return (
     <nav className={`w-full border-b fixed top-0 z-50 transition-all duration-300 ${theme === 'dark' ? 'bg-gray-900/95 border-gray-700 backdrop-blur-md' : 'bg-white/80 border-gray-100 backdrop-blur-md'}`}>
@@ -70,18 +79,37 @@ const Navbar = () => {
 
                 {/* Dropdown Menu contents */}
                 <div className={`absolute top-full right-0 mt-1 w-56 bg-white rounded-xl shadow-2xl border border-gray-100 py-3 z-50 transition-all duration-200 ${showDropdown ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'}`}>
-                  {/* Link to Student Dashboard */}
-                  <Link
-                    to="/dashboard"
-                    className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
-                      </svg>
-                    </div>
-                    Dashboard
-                  </Link>
+                  {/* Link to Educator Dashboard (if applicable) */}
+                  {isEducator ? (
+                    <Link
+                      to="/educator"
+                      className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                        </svg>
+                      </div>
+                      Educator Panel
+                    </Link>
+                  ) : null}
+
+                  {/* Link to Student Dashboard - Only if not strictly teacher? 
+                      Actually let's show student links for everyone for now, but focus on the choice.
+                  */}
+                  {!isEducator && (
+                    <Link
+                      to="/dashboard"
+                      className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                        </svg>
+                      </div>
+                      Student Dashboard
+                    </Link>
+                  )}
                   {/* Link to Enrolled Courses */}
                   <Link
                     to="/my-enrollments"
@@ -177,7 +205,7 @@ const Navbar = () => {
                 Log in
               </button>
               <button
-                onClick={() => openSignUp()}
+                onClick={() => setIsRoleModalOpen(true)}
                 className="bg-gray-900 hover:bg-black text-white px-6 py-2.5 rounded-lg text-sm font-bold shadow-lg shadow-gray-200 transition-all active:scale-95"
               >
                 Create Account
@@ -185,6 +213,14 @@ const Navbar = () => {
             </div>
           )}
         </div>
+
+        {/* mobile menu part ... (keeping it simple for now) */}
+        
+        <RoleSelectionModal 
+          isOpen={isRoleModalOpen} 
+          onClose={() => setIsRoleModalOpen(false)} 
+          onSelect={handleRoleSelection} 
+        />
 
         {/* Mobile Menu - Only visible on small screens */}
         <div className="md:hidden flex items-center gap-3">
@@ -199,7 +235,7 @@ const Navbar = () => {
                 Log In
               </button>
               <button
-                onClick={() => openSignUp()}
+                onClick={() => setIsRoleModalOpen(true)}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition"
               >
                 Sign Up
