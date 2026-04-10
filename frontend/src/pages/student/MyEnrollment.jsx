@@ -18,7 +18,8 @@ const MyEnrollment = () => {
     enrolledCourses,
     isEducator,
     calculateCourseDuration,
-    calculateNoOfLectures
+    calculateNoOfLectures,
+    userDataLoading
   } = useContext(AppContext);
 
   // Track loading status for specific course certificate generations independently
@@ -57,10 +58,11 @@ const MyEnrollment = () => {
 
   // Redirect Educators away from this student-only page
   useEffect(() => {
+    if (userDataLoading) return;
     if (user && isEducator) {
       navigate('/educator');
     }
-  }, [user, isEducator, navigate]);
+  }, [user, isEducator, navigate, userDataLoading]);
 
   // Redirect or show message if user isn't authenticated
   if (!user) {

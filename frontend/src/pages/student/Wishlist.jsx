@@ -7,7 +7,7 @@ import { assets } from '../../assets/assets';
 import API_BASE_URL from '../../utils/api';
 
 const Wishlist = () => {
-    const { getToken, navigate, user, currency, calculateRating, enrolledCourses, isEducator } = useContext(AppContext);
+    const { getToken, navigate, user, currency, calculateRating, enrolledCourses, isEducator, userDataLoading } = useContext(AppContext);
     const [wishlist, setWishlist] = useState([]);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState({});
@@ -99,6 +99,7 @@ const Wishlist = () => {
     };
 
     useEffect(() => {
+        if (userDataLoading) return;
         if (user) {
             if (isEducator) {
                 navigate('/educator');
@@ -108,7 +109,7 @@ const Wishlist = () => {
         } else {
             setLoading(false);
         }
-    }, [user, isEducator]);
+    }, [user, isEducator, userDataLoading]);
 
     if (!user) {
         return (
