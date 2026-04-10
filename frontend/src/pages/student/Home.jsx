@@ -10,26 +10,36 @@ import { AppContext } from '../../context/AppContext'
 
 const Home = () => {
   // Use context for navigation
-  const { navigate, becomeEducator, userData } = React.useContext(AppContext);
+  const { navigate, becomeEducator, userData, isEducator, userDataLoading } = React.useContext(AppContext);
 
   // Effect hook to check if the user intended to go to a specific dashboard 
   // before being redirected to Home (e.g., after logging in)
   React.useEffect(() => {
+    // Wait for user data to load before making routing decisions
+    if (userDataLoading) return;
+
     const preferredRole = sessionStorage.getItem('preferredRole');
     
+    // 1. Handle Critical Role Commitment (only triggered by explicit modal selection)
     if (preferredRole === 'educator') {
       sessionStorage.removeItem('preferredRole');
-      // If user is already logged in but not an educator, trigger the becomeEducator switch
       if (userData && userData.role !== 'educator') {
         becomeEducator();
       } else {
         navigate('/educator');
       }
+      return;
     } else if (preferredRole === 'student') {
       sessionStorage.removeItem('preferredRole');
+      // If they are already a teacher, they get redirected from dashboard anyway, 
+      // but let's send them there to see the "locked" message logic
       navigate('/dashboard');
+      return;
     }
-  }, [navigate, becomeEducator, userData]);
+
+    // Note: We removed the aggressive redirect from Home.jsx to allow 
+    // Educators to see the landing page, but Dashboards remain locked.
+  }, [navigate, becomeEducator, userData, isEducator, userDataLoading]);
 
   return (
     <div className='flex flex-col items-center space-y-7 text-center'>
