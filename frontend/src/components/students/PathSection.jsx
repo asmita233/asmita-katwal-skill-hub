@@ -14,36 +14,34 @@ const PathSection = () => {
                 <h2 className="text-4xl font-extrabold text-gray-900 mb-12">Master the <span className="text-blue-600">Skills</span> That Matter.</h2>
 
                 <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                    {/* Student Path - Hidden if already an educator */}
-                    {!isEducator && (
-                        <div
-                            onClick={() => {
-                                if (user) {
-                                    navigate('/dashboard');
-                                } else {
-                                    sessionStorage.setItem('preferredRole', 'student');
-                                    openSignUp();
-                                }
-                            }}
-                            className="group cursor-pointer bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-100 hover:border-blue-300 rounded-2xl p-8 text-left transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-100"
-                        >
-                            <div className="w-14 h-14 bg-blue-600 rounded-xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
-                                <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-                                </svg>
-                            </div>
-                            <h3 className="text-2xl font-bold text-gray-900 mb-2">Start Learning</h3>
-                            <p className="text-gray-600 mb-4">
-                                Access thousands of courses and learn at your own pace.
-                            </p>
-                            <div className="flex items-center text-blue-600 font-semibold group-hover:gap-3 transition-all">
-                                <span>{user ? 'Go to Dashboard' : 'Create Student Account'}</span>
-                                <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
-                                </svg>
-                            </div>
+                    {/* Student Path - Available to everyone */}
+                    <div
+                        onClick={() => {
+                            if (user) {
+                                navigate('/dashboard');
+                            } else {
+                                sessionStorage.setItem('preferredRole', 'student');
+                                openSignUp();
+                            }
+                        }}
+                        className="group cursor-pointer bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-100 hover:border-blue-300 rounded-2xl p-8 text-left transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-100"
+                    >
+                        <div className="w-14 h-14 bg-blue-600 rounded-xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                            <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                            </svg>
                         </div>
-                    )}
+                        <h3 className="text-2xl font-bold text-gray-900 mb-2">Start Learning</h3>
+                        <p className="text-gray-600 mb-4">
+                            Access thousands of courses and learn at your own pace.
+                        </p>
+                        <div className="flex items-center text-blue-600 font-semibold group-hover:gap-3 transition-all">
+                            <span>{user ? (isEducator ? 'Browse Courses' : 'Go to Dashboard') : 'Create Student Account'}</span>
+                            <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
+                            </svg>
+                        </div>
+                    </div>
 
                     {/* Educator Path - Hidden if already a student */}
                     {!(user && !isEducator && userData?.enrolledCourses?.length > 0) && (

@@ -156,8 +156,8 @@ const Profile = () => {
                                     <p className="text-gray-500 mt-1">{userData.email}</p>
                                     <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-3">
                                         <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${isEducator
-                                                ? 'bg-purple-100 text-purple-700'
-                                                : 'bg-blue-100 text-blue-700'
+                                            ? 'bg-purple-100 text-purple-700'
+                                            : 'bg-blue-100 text-blue-700'
                                             }`}>
                                             {userData.role || 'Student'}
                                         </span>

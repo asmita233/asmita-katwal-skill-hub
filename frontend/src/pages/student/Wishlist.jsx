@@ -101,15 +101,11 @@ const Wishlist = () => {
     useEffect(() => {
         if (userDataLoading) return;
         if (user) {
-            if (isEducator) {
-                navigate('/educator');
-                return;
-            }
             fetchWishlist();
         } else {
             setLoading(false);
         }
-    }, [user, isEducator, userDataLoading]);
+    }, [user, userDataLoading]);
 
     if (!user) {
         return (

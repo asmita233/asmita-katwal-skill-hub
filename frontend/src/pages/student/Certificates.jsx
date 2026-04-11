@@ -47,15 +47,11 @@ const Certificates = () => {
     useEffect(() => {
         if (userDataLoading) return;
         if (user) {
-            if (isEducator) {
-                navigate('/educator');
-                return;
-            }
             fetchCertificates();
         } else {
             setLoading(false);
         }
-    }, [user, isEducator, userDataLoading]);
+    }, [user, userDataLoading]);
 
     /**
      * 

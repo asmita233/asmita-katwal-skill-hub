@@ -58,10 +58,7 @@ const MyEnrollment = () => {
 
   // Redirect Educators away from this student-only page
   useEffect(() => {
-    if (userDataLoading) return;
-    if (user && isEducator) {
-      navigate('/educator');
-    }
+    // Educators are now allowed to visit student enrollment pages
   }, [user, isEducator, navigate, userDataLoading]);
 
   // Redirect or show message if user isn't authenticated
