@@ -18,7 +18,8 @@ const PathSection = () => {
                     <div
                         onClick={() => {
                             if (user) {
-                                navigate('/dashboard');
+                                // If they are an educator, take them to courses, otherwise dashboard
+                                isEducator ? navigate('/course-list') : navigate('/dashboard');
                             } else {
                                 sessionStorage.setItem('preferredRole', 'student');
                                 openSignUp();
@@ -43,8 +44,8 @@ const PathSection = () => {
                         </div>
                     </div>
 
-                    {/* Educator Path - Hidden if already a student */}
-                    {!(user && !isEducator && userData?.enrolledCourses?.length > 0) && (
+                    {/* Educator Path - Always available for dual-role switching */}
+                    {true && (
                         <div
                             onClick={() => {
                                 sessionStorage.setItem('preferredRole', 'educator');

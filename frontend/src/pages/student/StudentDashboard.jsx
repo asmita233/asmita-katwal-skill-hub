@@ -38,12 +38,15 @@ const StudentDashboard = () => {
         }
     };
 
+    // Removed forced redirect to educator dashboard to allow educators to access student features
+    /*
     useEffect(() => {
         if (userDataLoading) return;
         if (user && isEducator) {
             navigate('/educator');
         }
     }, [user, isEducator, navigate, userDataLoading]);
+    */
 
     useEffect(() => {
         if (userDataLoading) return; // Wait for data to be sure of role

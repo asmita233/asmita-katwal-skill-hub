@@ -49,20 +49,12 @@ const Educator = () => {
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
             {user ? (
-               // If user is a student and already has some progress/enrollments, we might want to block them
-               // But for now, let's just respect the role they have.
-               userData?.role === 'student' && userData?.enrolledCourses?.length > 0 ? (
-                 <div className="px-12 py-5 bg-red-50 text-red-600 text-lg font-bold rounded-[20px] border border-red-100 italic">
-                   Student Profile Active - Educator Access Restricted
-                 </div>
-               ) : (
                 <button
                   onClick={becomeEducator}
                   className="px-12 py-5 bg-gray-900 hover:bg-black text-white text-lg font-bold rounded-[20px] transition-all hover:scale-105 active:scale-95 shadow-xl shadow-gray-200"
                 >
                   Apply to Teach Now
                 </button>
-               )
             ) : (
               <button
                 onClick={() => openSignIn()}

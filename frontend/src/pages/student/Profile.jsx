@@ -35,8 +35,42 @@ const Profile = () => {
             if (userRes.success) {
                 setUserData(userRes.user);
 
+                // Standard Student Data (Now always fetched for all users)
+                const enrollments = userRes.user.enrolledCourses || [];
+                let completed = 0;
+
+                for (const enrollment of enrollments) {
+                    if (enrollment.courseId && enrollment.progress) {
+                        const totalLectures = enrollment.courseId.totalLectures || 0;
+                        const completedLectures = enrollment.progress.completedLectures?.length || 0;
+                        if (totalLectures > 0 && completedLectures >= totalLectures) {
+                            completed++;
+                        }
+                    }
+                }
+
+                setStats(prev => ({
+                    ...prev,
+                    enrolledCount: enrollments.length,
+                    completedCount: completed,
+                    wishlistCount: userRes.user.wishlist?.length || 0,
+                }));
+
+                // Fetch certificates count
+                try {
+                    const { data: certRes } = await axios.get(`${API_BASE_URL}/api/certificates/user`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    if (certRes.success) {
+                        setStats(prev => ({
+                            ...prev,
+                            certificateCount: certRes.certificates?.length || 0,
+                        }));
+                    }
+                } catch (e) { }
+
+                // Fetch Educator Stats if applicable
                 if (userRes.user.role === 'educator') {
-                    // Fetch Educator Stats
                     try {
                         const { data: edRes } = await axios.get(`${API_BASE_URL}/api/courses/educator/dashboard`, {
                             headers: { Authorization: `Bearer ${token}` }
@@ -52,40 +86,6 @@ const Profile = () => {
                     } catch (e) {
                         console.error('Error fetching educator stats:', e);
                     }
-                } else {
-                    // Standard Student Data
-                    const enrollments = userRes.user.enrolledCourses || [];
-                    let completed = 0;
-
-                    for (const enrollment of enrollments) {
-                        if (enrollment.courseId && enrollment.progress) {
-                            const totalLectures = enrollment.courseId.totalLectures || 0;
-                            const completedLectures = enrollment.progress.completedLectures?.length || 0;
-                            if (totalLectures > 0 && completedLectures >= totalLectures) {
-                                completed++;
-                            }
-                        }
-                    }
-
-                    setStats(prev => ({
-                        ...prev,
-                        enrolledCount: enrollments.length,
-                        completedCount: completed,
-                        wishlistCount: userRes.user.wishlist?.length || 0,
-                    }));
-
-                    // Fetch certificates count
-                    try {
-                        const { data: certRes } = await axios.get(`${API_BASE_URL}/api/certificates/user`, {
-                            headers: { Authorization: `Bearer ${token}` }
-                        });
-                        if (certRes.success) {
-                            setStats(prev => ({
-                                ...prev,
-                                certificateCount: certRes.certificates?.length || 0,
-                            }));
-                        }
-                    } catch (e) { }
                 }
             }
 
@@ -188,51 +188,53 @@ const Profile = () => {
 
                 {/* Stats Grid */}
                 <div className="max-w-4xl mx-auto px-6 mt-8">
-                    {isEducator ? (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            {/* Total Students */}
-                            <div
-                                onClick={() => navigate('/educator/student-enrolled')}
-                                className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group"
-                            >
-                                <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                    <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                                    </svg>
+                    <div className="space-y-8">
+                        {isEducator && (
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                {/* Total Students */}
+                                <div
+                                    onClick={() => navigate('/educator/student-enrolled')}
+                                    className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group"
+                                >
+                                    <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                        <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                        </svg>
+                                    </div>
+                                    <p className="text-3xl font-bold text-gray-900">{stats.totalStudents}</p>
+                                    <p className="text-gray-500 mt-1 font-medium">Total Students</p>
                                 </div>
-                                <p className="text-3xl font-bold text-gray-900">{stats.totalStudents}</p>
-                                <p className="text-gray-500 mt-1 font-medium">Total Students</p>
-                            </div>
 
-                            {/* Total Courses */}
-                            <div
-                                onClick={() => navigate('/educator/my-courses')}
-                                className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group"
-                            >
-                                <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                                    </svg>
+                                {/* Total Courses */}
+                                <div
+                                    onClick={() => navigate('/educator/my-courses')}
+                                    className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group"
+                                >
+                                    <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                        <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                        </svg>
+                                    </div>
+                                    <p className="text-3xl font-bold text-gray-900">{stats.totalCourses}</p>
+                                    <p className="text-gray-500 mt-1 font-medium">Courses Created</p>
                                 </div>
-                                <p className="text-3xl font-bold text-gray-900">{stats.totalCourses}</p>
-                                <p className="text-gray-500 mt-1 font-medium">Courses Created</p>
-                            </div>
 
-                            {/* Total Earnings */}
-                            <div
-                                onClick={() => navigate('/educator')}
-                                className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group"
-                            >
-                                <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                    <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
+                                {/* Total Earnings */}
+                                <div
+                                    onClick={() => navigate('/educator')}
+                                    className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group"
+                                >
+                                    <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                        <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                    </div>
+                                    <p className="text-3xl font-bold text-gray-900">${stats.totalEarnings?.toFixed(2)}</p>
+                                    <p className="text-gray-500 mt-1 font-medium">Total Earnings</p>
                                 </div>
-                                <p className="text-3xl font-bold text-gray-900">${stats.totalEarnings?.toFixed(2)}</p>
-                                <p className="text-gray-500 mt-1 font-medium">Total Earnings</p>
                             </div>
-                        </div>
-                    ) : (
+                        )}
+
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             {/* Enrolled Courses */}
                             <div
@@ -290,7 +292,7 @@ const Profile = () => {
                                 <p className="text-sm text-gray-500 mt-1">Wishlist</p>
                             </div>
                         </div>
-                    )}
+                    </div>
                 </div>
 
                 {/* Quick Actions */}
