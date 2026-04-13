@@ -76,6 +76,7 @@ const uploadPdfMulter = multer({
 
 // Public routes
 router.get('/', getAllCourses);
+router.get('/all', getAllCourses);
 
 // Educator routes — MUST come BEFORE /:id to avoid route collision
 // (otherwise 'educator' would be treated as a course ID)

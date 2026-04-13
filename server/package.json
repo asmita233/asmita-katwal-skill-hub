@@ -12,7 +12,7 @@
   "jest": {
     "testMatch": ["**/tests/test_*.js"],
     "testTimeout": 10000,
-    "setupFiles": ["./jest.setup.js"],
+    "setupFilesAfterEnv": ["./jest.setup.js"],
     "moduleNameMapper": {
       "^uuid$": "<rootDir>/tests/__mocks__/uuid.js"
     }

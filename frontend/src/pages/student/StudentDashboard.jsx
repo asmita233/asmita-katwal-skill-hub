@@ -264,10 +264,6 @@ const StudentDashboard = () => {
                                     <span className="block text-sm font-medium text-slate-900">Wishlist</span>
                                     <span className="text-xs text-slate-500">{wishlistCount} saved courses</span>
                                 </button>
-                                <button onClick={() => navigate('/profile')} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left hover:bg-slate-100 transition">
-                                    <span className="block text-sm font-medium text-slate-900">Profile</span>
-                                    <span className="text-xs text-slate-500">Update your account details</span>
-                                </button>
                             </div>
                         </section>
 

@@ -94,21 +94,6 @@ const Navbar = () => {
                     </Link>
                   )}
 
-                  {/* Educator Panel Link - Visible if user is educator */}
-                  {!userDataLoading && isEducator && (
-                    <Link
-                      to="/educator"
-                      className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition"
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
-                        </svg>
-                      </div>
-                      Educator Panel
-                    </Link>
-                  )}
-
                   {/* Student-only Links - Now available to Educators too for dual mapping */}
                   <Link
                     to="/my-enrollments"
@@ -143,22 +128,6 @@ const Navbar = () => {
                     </div>
                     Certificates
                   </Link>
-                  {/* Divider */}
-                  <div className="border-t border-gray-100 my-1"></div>
-                  {/* Link to Profile */}
-                  <Link
-                    to="/profile"
-                    className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                      </svg>
-                    </div>
-                    My Profile
-                  </Link>
-
-
                 </div>
               </div>
             </>
